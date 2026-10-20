@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071014" />
+  <meta name="description" content="Causal Firewall — prove an automated infrastructure fix before scaling it globally." />
+  <title>Causal Firewall — remediation with evidence</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="#console"><span class="brand-mark">CF</span><span>causal<span class="brand-muted">/</span>firewall</span></a>
+    <div class="header-right"><span class="runtime-pill"><i></i> Local evaluation runtime</span><span class="build-label">BUILD 0.1.0 · DEMO MODE</span></div>
+  </header>
+  <main class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="sidebar-intro"><span class="eyebrow">Remediation gate</span><p>Prove the fix before you scale the fix.</p></div>
+      <nav class="side-nav">
+        <a class="nav-link active" href="#console" data-route="console"><span class="nav-index">01</span><span>Console</span><span class="nav-arrow">↗</span></a>
+        <a class="nav-link" href="#simulate" data-route="simulate"><span class="nav-index">02</span><span>Run scenario</span><span class="nav-arrow">↗</span></a>
+        <a class="nav-link" href="#trace" data-route="trace"><span class="nav-index">03</span><span>Causal trace</span><span class="nav-arrow">↗</span></a>
+      </nav>
+      <div class="sidebar-footer"><span>OPEN-SOURCE PROTOTYPE</span><span class="status-line"><i></i> Policy engine online</span></div>
+    </aside>
+    <section class="workspace" id="app" aria-live="polite"></section>
+  </main>
+  <footer class="app-footer"><span>CAUSAL FIREWALL / AN EVIDENCE-FIRST REMEDIATION GATE</span><span>NO PRODUCTION ACTIONS · LOCAL SIMULATION ONLY</span></footer>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

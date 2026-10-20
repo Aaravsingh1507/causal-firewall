@@ -1,0 +1,9 @@
+node_modules/
+.opencode/
+.env
+.env.*
+!.env.example
+dist/
+.DS_Store
+npm-debug.log*
+*.local
