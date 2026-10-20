@@ -13,9 +13,9 @@ export const scenarios = [
       { id: 'queue-depth', label: 'Queue depth', value: '+11×', tone: 'warning', detail: 'The queue is growing faster than workers can drain it.' }
     ],
     interventions: [
-      { id: 'restart-api', label: 'Restart API', result: 'temporary', effect: 'A short recovery hides the pressure, then latency returns.' },
-      { id: 'clear-cache', label: 'Clear Redis cache', result: 'neutral', effect: 'No meaningful improvement in p95 latency.' },
-      { id: 'stop-retries', label: 'Apply retry budget', result: 'causal', effect: 'Latency drops and queue growth stops in the shadow cohort.' }
+      { id: 'restart-api', label: 'Restart API', result: 'temporary', effect: 'A short recovery hides the pressure, then latency returns.', metric: { label: 'p95 API latency', delta: '−9%', detail: 'Latency improves briefly, then returns as retries rebuild pressure.' } },
+      { id: 'clear-cache', label: 'Clear Redis cache', result: 'neutral', effect: 'No meaningful improvement in p95 latency.', metric: { label: 'p95 API latency', delta: '+1%', detail: 'The shadow cohort shows no reliable change in the target metric.' } },
+      { id: 'stop-retries', label: 'Apply retry budget', result: 'causal', effect: 'Latency drops and queue growth stops in the shadow cohort.', metric: { label: 'p95 API latency', delta: '−71%', detail: 'Latency falls while queue growth stops in the shadow cohort.' } }
     ],
     recommendation: 'Apply an exponential backoff and retry budget to workers before changing database capacity.'
   },
@@ -33,9 +33,9 @@ export const scenarios = [
       { id: 'db-health', label: 'Database health', value: '99.8%', tone: 'healthy', detail: 'The source database is healthy and serving current prices.' }
     ],
     interventions: [
-      { id: 'restart-catalog', label: 'Restart catalog', result: 'neutral', effect: 'The service restarts without updating existing cache keys.' },
-      { id: 'invalidate-keys', label: 'Invalidate stale keys', result: 'causal', effect: 'Stale reads fall below 0.2% in the shadow cohort.' },
-      { id: 'scale-db', label: 'Scale database', result: 'neutral', effect: 'Adds capacity but does not change cache freshness.' }
+      { id: 'restart-catalog', label: 'Restart catalog', result: 'neutral', effect: 'The service restarts without updating existing cache keys.', metric: { label: 'stale pricing reads', delta: '−0.4%', detail: 'A restart does not invalidate the old versioned cache keys.' } },
+      { id: 'invalidate-keys', label: 'Invalidate stale keys', result: 'causal', effect: 'Stale reads fall below 0.2% in the shadow cohort.', metric: { label: 'stale pricing reads', delta: '−99%', detail: 'Stale reads fall from 14.2% to below 0.2% in the shadow cohort.' } },
+      { id: 'scale-db', label: 'Scale database', result: 'neutral', effect: 'Adds capacity but does not change cache freshness.', metric: { label: 'stale pricing reads', delta: '+0.1%', detail: 'The source database is healthy already; extra capacity does not change cache freshness.' } }
     ],
     recommendation: 'Invalidate keys carrying the previous catalog version, then replay the shadow cohort.'
   }

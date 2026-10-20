@@ -22,7 +22,8 @@ test('permissive policy can bypass the causal proof rule', () => {
   policy.rules.find(rule => rule.id === 'causal-proof').enabled = false;
   const result = evaluateScenario(getScenario('cache-drift'), policy, 'scale-db');
   assert.equal(result.decision, 'allow');
-  assert.equal(result.matchedRuleIds.length, 0);
+  assert.equal(result.matchedRuleIds.includes('causal-proof'), false);
+  assert.deepEqual(result.matchedRuleIds, ['blast-radius', 'audit-evidence']);
 });
 
 test('history summary counts evaluated decisions', () => {
