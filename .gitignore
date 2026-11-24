@@ -1,11 +1,11 @@
 node_modules/
 .opencode/
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
 dist/
 .DS_Store
 npm-debug.log*
 *.local
-
-.vercel
+.vercel/
