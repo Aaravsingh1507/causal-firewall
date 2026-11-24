@@ -264,7 +264,7 @@ function renderAIDoctor() {
         
         <div class="ai-action-bar">
           <button class="primary-button ai-diagnose-btn ${loading?'loading':''}" data-action="diagnose-ai" ${loading?'disabled':''}>
-            ${loading ? `<span class="spinner" aria-hidden="true">◌</span> Analyzing incident…` : `<span class="sparkle-icon">✨</span> Diagnose & Generate Fixes`}
+            ${loading ? `<span class="spinner" aria-hidden="true"></span> Analyzing incident…` : `<span class="sparkle-icon">✨</span> Diagnose & Generate Fixes`}
           </button>
           ${diag ? `<button class="text-button" data-action="clear-ai">Clear analysis</button>` : ''}
         </div>
@@ -461,7 +461,7 @@ function renderSimulator() {
 
       <div class="eval-buttons">
         <button class="evaluate-button ${evaluating?'loading':''}" data-action="evaluate" ${evaluating?'disabled':''}>
-          ${evaluating ? `<span class="spinner" aria-hidden="true">◌</span> ${esc(evalText || 'Measuring shadow cohort…')}` : `Evaluate intervention <span aria-hidden="true">${icon('arrow')}</span>`}
+          ${evaluating ? `<span class="spinner" aria-hidden="true"></span> ${esc(evalText || 'Measuring shadow cohort…')}` : `Evaluate intervention <span aria-hidden="true">${icon('arrow')}</span>`}
         </button>
         <button class="batch-button" data-action="batch-evaluate" ${evaluating?'disabled':''} title="Evaluate all interventions at once">Batch all <span aria-hidden="true">${icon('arrow')}</span></button>
       </div>
