@@ -392,10 +392,28 @@ function renderAIDoctor() {
       </div>
     </section>` : `
       <section class="panel ai-placeholder-panel">
-        <div class="ai-empty-state">
-          <div class="empty-sparkle">✨</div>
-          <h3>Ready for Diagnosis</h3>
-          <p>Paste a real bug or select one of the examples above. The AI engine will generate a full root-cause breakdown and code patch ready for shadow testing.</p>
+        <div class="ai-workflow-steps">
+          <div class="ai-workflow-step">
+            <span class="workflow-step-num">1</span>
+            <div>
+              <strong>Paste Real Incident Log</strong>
+              <p>Enter any terminal stack trace, error log, or describe your website's bug.</p>
+            </div>
+          </div>
+          <div class="ai-workflow-step">
+            <span class="workflow-step-num">2</span>
+            <div>
+              <strong>AI Root-Cause Diagnosis</strong>
+              <p>The AI engine isolates the true failure domain and generates 3 candidate fixes.</p>
+            </div>
+          </div>
+          <div class="ai-workflow-step">
+            <span class="workflow-step-num">3</span>
+            <div>
+              <strong>5% Shadow Cohort Test</strong>
+              <p>Verify statistical confidence (p &lt; 0.05) before code touches 100% of users.</p>
+            </div>
+          </div>
         </div>
       </section>
     `}

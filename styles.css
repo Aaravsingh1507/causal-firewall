@@ -986,11 +986,20 @@ h1, h2, h3, h4, p { margin: 0; }
    ═══════════════════════════════════════════════════════════ */
 
 .ai-doctor-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
   padding-top: 26px;
-  align-items: start;
+  max-width: 100%;
+}
+
+.ai-input-panel {
+  width: 100%;
+}
+
+.ai-result-panel {
+  width: 100%;
+  animation: slideUp .3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ai-intro-card {
@@ -1438,15 +1447,76 @@ h1, h2, h3, h4, p { margin: 0; }
 .section-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .section-top small { font-size: 11px; color: var(--dim); white-space: nowrap; }
 
-.ai-intervention-list { display: grid; gap: 12px; }
+.ai-intervention-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .ai-intervention-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── How It Works Steps ───────────────────────────────── */
+.ai-workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px;
+}
+
+.ai-workflow-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.workflow-step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cyan-soft);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font: 700 12px 'DM Mono', monospace;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ai-workflow-step strong {
+  display: block;
+  font: 600 13px 'Space Grotesk', sans-serif;
+  color: var(--text-bright);
+  margin-bottom: 3px;
+}
+
+.ai-workflow-step p {
+  font-size: 11px/1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .ai-workflow-steps {
+    grid-template-columns: 1fr;
+  }
+}
 
 .ai-int-card {
-  padding: 16px 18px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   border-radius: var(--radius-lg);
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   transition: all .2s;
   min-width: 0;
 }
@@ -1525,7 +1595,15 @@ h1, h2, h3, h4, p { margin: 0; }
   word-break: break-word;
 }
 
-.ai-int-actions { margin-top: 4px; }
+.ai-int-actions {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.ai-int-actions .primary-button {
+  width: 100%;
+  justify-content: center;
+}
 
 /* ── Code Patch Display ───────────────────────────────── */
 
@@ -1593,9 +1671,12 @@ h1, h2, h3, h4, p { margin: 0; }
 .shadow-patch .code-block { color: #fde68a; }
 
 .ai-placeholder-panel {
-  min-height: 420px;
-  display: grid;
-  place-items: center;
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .ai-empty-state {
