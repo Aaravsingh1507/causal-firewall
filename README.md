@@ -2,8 +2,7 @@
 
 > **"An AI-powered safety gate for websites and web apps that proves a fix works before letting it touch 100% of your users."**
 
-**Live Web App**: [https://causal-firewall-main.vercel.app](https://causal-firewall-main.vercel.app)  
-**GitHub Repository**: [https://github.com/Aaravsingh1507/causal-firewall](https://github.com/Aaravsingh1507/causal-firewall)
+**Live Web App**: [https://causal-firewall-main.vercel.app](https://causal-firewall-main.vercel.app)
 
 ---
 
