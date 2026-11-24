@@ -492,46 +492,217 @@ function renderSimulator() {
    TRACE PAGE
    ═══════════════════════════════════════════════════════════ */
 
+function renderTraceEmpty() {
+  return `<div class="trace-empty-hero">
+    <div class="trace-empty-header">
+      <div class="trace-empty-badge">
+        <span class="sparkle-icon">⚡</span>
+        <span>Causal Inference Engine</span>
+      </div>
+      <h2>No Causal Trace Evaluated Yet</h2>
+      <p class="trace-empty-desc">
+        The Causal Firewall tests candidate fixes in a 5% shadow cohort before they reach 100% of production users. Run a test to map every signal, counterfactual hypothesis, metric delta, and policy gate decision.
+      </p>
+    </div>
+
+    <div class="trace-pipeline-preview">
+      <div class="pipeline-step">
+        <span class="pipeline-step-num">01</span>
+        <strong>Telemetry Ingestion</strong>
+        <p>Collects live error rates, p99 latency, and downstream failure signals.</p>
+      </div>
+      <div class="pipeline-connector" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <span class="pipeline-step-num">02</span>
+        <strong>Causal DAG Isolation</strong>
+        <p>Separates genuine root causes from downstream correlation traps.</p>
+      </div>
+      <div class="pipeline-connector" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <span class="pipeline-step-num">03</span>
+        <strong>5% Shadow Cohort</strong>
+        <p>Calculates p-value statistical significance and effect size.</p>
+      </div>
+      <div class="pipeline-connector" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <span class="pipeline-step-num">04</span>
+        <strong>Firewall Decision Gate</strong>
+        <p>Autonomous ALLOW or HOLD based on safety invariants & blast radius.</p>
+      </div>
+    </div>
+
+    <div class="trace-empty-actions">
+      <span class="trace-empty-actions-label">Run an interactive scenario with 1-click:</span>
+      <div class="trace-quick-launch-grid">
+        <button class="quick-trace-btn" data-action="quick-trace" data-scenario="cascading-timeout" data-intervention="circuit-breaker">
+          <span class="quick-trace-icon">⚡</span>
+          <div class="quick-trace-info">
+            <strong>Run 504 Cascading Timeout Trace</strong>
+            <small>Circuit Breaker vs Retry Storm (INC-2048)</small>
+          </div>
+          <span class="quick-trace-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="quick-trace-btn" data-action="quick-trace" data-scenario="dns-resolution-failure" data-intervention="static-fallback">
+          <span class="quick-trace-icon">🌐</span>
+          <div class="quick-trace-info">
+            <strong>Run DNS Outage Trace</strong>
+            <small>Static Host Fallback (INC-2063)</small>
+          </div>
+          <span class="quick-trace-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="quick-trace-btn" data-action="quick-trace" data-scenario="memory-leak" data-intervention="stream-processing">
+          <span class="quick-trace-icon">🧠</span>
+          <div class="quick-trace-info">
+            <strong>Run Memory Leak OOM Trace</strong>
+            <small>Stream Processing vs Restart (INC-2077)</small>
+          </div>
+          <span class="quick-trace-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <div class="trace-empty-foot-nav">
+        <a class="primary-button" href="#simulate">Open Scenario Simulator <span aria-hidden="true">${icon('arrow')}</span></a>
+        <a class="secondary-button" href="#ai">Diagnose with AI Incident Doctor <span aria-hidden="true">${icon('arrow')}</span></a>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderTrace() {
-  const ev = store.state.evaluation;
-  if (!ev) return layout(`<div class="trace-empty panel"><span class="empty-icon">◎</span><h2>No causal trace yet.</h2><p>Run a controlled scenario or diagnose a bug with the AI Doctor. The firewall will show every signal, hypothesis, metric, and policy decision.</p><a class="primary-button" href="#simulate">Go to simulator <span aria-hidden="true">${icon('arrow')}</span></a></div>`);
+  if (store.state.isEvaluating) {
+    return layout(`<div class="trace-eval-loading">
+      <div class="panel">
+        ${renderScanner(store.state.evalStage, store.state.evalStageText || 'Simulating 5% shadow cohort & verifying causal proof…')}
+      </div>
+    </div>`);
+  }
+
+  let ev = store.state.evaluation;
+  if (!ev && store.state.history.length > 0) {
+    ev = store.state.history.find(e => e.id === store.state.selectedEvaluationId) || store.state.history[0];
+    store.state.evaluation = ev;
+    store.state.selectedEvaluationId = ev.id;
+  }
+
+  if (!ev) {
+    return layout(renderTraceEmpty());
+  }
 
   const scenario = store.findScenario(ev.scenarioId);
-  const sel = ev.trace.find(n => n.id === store.state.selectedNodeId) || ev.trace.at(-1);
+  const sel = (ev.trace && (ev.trace.find(n => n.id === store.state.selectedNodeId) || ev.trace.at(-1))) || {
+    id: 'decision',
+    label: 'Policy Gate Decision',
+    detail: ev.reason || '',
+    type: 'decision',
+    status: ev.decision
+  };
+  const historyList = store.state.history || [];
 
-  return layout(`<div class="trace-topline">
+  return layout(`
+  ${historyList.length > 1 ? `
+    <div class="trace-header-toolbar">
+      <div class="trace-history-picker">
+        <span class="trace-picker-label">
+          <span class="pulse-dot"></span> Trace Session (${historyList.length}):
+        </span>
+        <select class="trace-picker-select" data-action="select-trace-eval" aria-label="Select evaluation trace">
+          ${historyList.map(item => `
+            <option value="${item.id}" ${item.id === ev.id ? 'selected' : ''}>
+              ${item.decision === 'allow' ? '✓ ALLOW' : '✕ HOLD'} · ${esc(store.findScenario(item.scenarioId)?.shortLabel || item.scenarioId)} (${esc(item.interventionId.replaceAll('-', ' '))}) — ${Math.round(item.confidence * 100)}% conf
+            </option>
+          `).join('')}
+        </select>
+      </div>
+      <div class="trace-toolbar-actions">
+        <a class="text-button" href="#simulate">Run new test <span aria-hidden="true">${icon('arrow')}</span></a>
+        <a class="text-button" href="#ai">AI Doctor <span aria-hidden="true">${icon('arrow')}</span></a>
+      </div>
+    </div>
+  ` : ''}
+
+  <div class="trace-topline">
     <div class="decision-banner ${ev.decision}">
       <div class="decision-icon">${ev.decision==='allow'?'✓':'!'}</div>
-      <div><span class="section-kicker">Decision / ${scenario.incident}</span><h2>${statusLabel(ev.decision)}</h2><p>${esc(ev.reason)}</p></div>
-      <div class="confidence"><strong>${Math.round(ev.confidence*100)}%</strong><span>confidence</span></div>
+      <div>
+        <span class="section-kicker">Decision / ${scenario.incident || 'INCIDENT'}</span>
+        <h2>${statusLabel(ev.decision)}</h2>
+        <p>${esc(ev.reason)}</p>
+      </div>
+      <div class="confidence">
+        <strong>${Math.round(ev.confidence*100)}%</strong>
+        <span>confidence</span>
+      </div>
     </div>
-    <a class="text-button" href="#simulate">Replay another <span aria-hidden="true">${icon('arrow')}</span></a>
+    <div class="trace-topline-actions">
+      <a class="text-button" href="#simulate">Replay another <span aria-hidden="true">${icon('arrow')}</span></a>
+      <a class="text-button" href="#ai">AI Doctor <span aria-hidden="true">${icon('arrow')}</span></a>
+    </div>
   </div>
+
   <div class="trace-layout">
     <section class="panel trace-panel">
-      <div class="panel-header"><div><span class="section-kicker">Evidence chain</span><h2>${esc(scenario.shortLabel)} / ${esc(ev.interventionId.replaceAll('-',' '))}</h2></div><span class="mono">SIMULATED · ${ev.durationMs} MS</span></div>
-      <div class="trace-chain" role="list" aria-label="Causal evaluation trace">${ev.trace.map((node, i) => `
-        <div class="trace-step" role="listitem">
-          <button class="trace-node ${node.status} ${node.id===sel.id?'selected':''}" data-node="${node.id}" aria-label="Inspect ${node.label}" aria-pressed="${node.id===sel.id}">
-            <span class="trace-node-index">0${i+1}</span>
-            <span class="trace-node-type">${node.type}</span>
-            <strong>${esc(node.label)}</strong>
-            <small>${node.status==='matched'?'evidence matched':node.status==='passed'?'observed':node.status==='failed'?'not proven':node.status==='warning'?'inconclusive':node.status==='bypassed'?'bypassed':node.status}</small>
-          </button>
-          ${i<ev.trace.length-1?'<span class="trace-connector" aria-hidden="true">→</span>':''}
-        </div>`).join('')}</div>
-      <div class="trace-legend"><span><i class="legend-dot matched"></i> matched</span><span><i class="legend-dot warning"></i> inconclusive</span><span><i class="legend-dot failed"></i> failed proof</span></div>
-      ${ev.stats ? `<div class="stats-bar"><span class="mono">p-VALUE ${ev.stats.pValue}</span><span class="meta-divider"></span><span class="mono">EFFECT ${ev.stats.effectSize.toUpperCase()}</span><span class="meta-divider"></span><span class="mono">${ev.stats.sampleNote.toUpperCase()}</span></div>` : ''}
+      <div class="panel-header">
+        <div>
+          <span class="section-kicker">Evidence chain</span>
+          <h2>${esc(scenario.shortLabel)} / ${esc(ev.interventionId.replaceAll('-',' '))}</h2>
+        </div>
+        <span class="mono">SIMULATED · ${ev.durationMs} MS</span>
+      </div>
+
+      <div class="trace-chain" role="list" aria-label="Causal evaluation trace">
+        ${(ev.trace || []).map((node, i) => `
+          <div class="trace-step" role="listitem">
+            <button class="trace-node ${node.status} ${node.id===sel.id?'selected':''}" data-node="${node.id}" aria-label="Inspect ${node.label}" aria-pressed="${node.id===sel.id}">
+              <span class="trace-node-index">0${i+1}</span>
+              <span class="trace-node-type">${node.type}</span>
+              <strong>${esc(node.label)}</strong>
+              <small>${node.status==='matched'?'evidence matched':node.status==='passed'?'observed':node.status==='failed'?'not proven':node.status==='warning'?'inconclusive':node.status==='bypassed'?'bypassed':node.status}</small>
+            </button>
+            ${i<(ev.trace.length-1)?'<span class="trace-connector" aria-hidden="true">→</span>':''}
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="trace-legend">
+        <span><i class="legend-dot matched"></i> matched</span>
+        <span><i class="legend-dot warning"></i> inconclusive</span>
+        <span><i class="legend-dot failed"></i> failed proof</span>
+      </div>
+
+      ${ev.stats ? `
+        <div class="stats-bar">
+          <span class="mono">p-VALUE ${ev.stats.pValue}</span>
+          <span class="meta-divider"></span>
+          <span class="mono">EFFECT ${ev.stats.effectSize.toUpperCase()}</span>
+          <span class="meta-divider"></span>
+          <span class="mono">${ev.stats.sampleNote.toUpperCase()}</span>
+        </div>
+      ` : ''}
     </section>
-    <aside class="panel detail-panel"><span class="section-kicker">Selected evidence</span>
+
+    <aside class="panel detail-panel">
+      <span class="section-kicker">Selected evidence</span>
       <div class="detail-icon ${sel.status}">${sel.type==='decision'?'✓':sel.type==='rule'?'§':sel.type==='metric'?'Δ':'·'}</div>
-      <h2>${esc(sel.label)}</h2><p>${esc(sel.detail)}</p>
+      <h2>${esc(sel.label)}</h2>
+      <p>${esc(sel.detail)}</p>
       ${sel.meta?.stats ? `<p class="detail-stats">${esc(sel.meta.stats)}</p>` : ''}
-      <div class="detail-meta"><span class="mono">NODE / ${sel.id.toUpperCase()}</span><span class="status-chip ${sel.status}">${sel.status}</span></div>
-      <div class="recommendation"><span class="section-kicker">Firewall recommendation</span><p>${esc(ev.recommendation)}</p></div>
+      <div class="detail-meta">
+        <span class="mono">NODE / ${sel.id.toUpperCase()}</span>
+        <span class="status-chip ${sel.status}">${sel.status}</span>
+      </div>
+      <div class="recommendation">
+        <span class="section-kicker">Firewall recommendation</span>
+        <p>${esc(ev.recommendation)}</p>
+      </div>
     </aside>
   </div>
-  <div class="trace-bottom"><span class="mono">EVALUATED ${formatTime(ev.evaluatedAt)} · ${ev.matchedRuleIds.length} POLICY RULES MATCHED</span><a class="primary-button small" href="#console">Return to console <span aria-hidden="true">${icon('arrow')}</span></a></div>`);
+
+  <div class="trace-bottom">
+    <span class="mono">EVALUATED ${formatTime(ev.evaluatedAt)} · ${(ev.matchedRuleIds || []).length} POLICY RULES MATCHED</span>
+    <a class="primary-button small" href="#console">Return to console <span aria-hidden="true">${icon('arrow')}</span></a>
+  </div>`);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -827,6 +998,15 @@ document.addEventListener('click', e => {
     store.selectScenario(scId);
     store.selectIntervention(intId);
     store.evaluate();
+    window.location.hash = '#trace';
+  }
+  else if (act === 'quick-trace') {
+    const scId = t.dataset.scenario;
+    const intId = t.dataset.intervention;
+    store.selectScenario(scId);
+    store.selectIntervention(intId);
+    store.evaluate();
+    window.location.hash = '#trace';
   }
   else if (act === 'save-gemini-key') {
     const input = document.querySelector('#gemini-key-input');
@@ -855,11 +1035,12 @@ document.addEventListener('click', e => {
   else if (act === 'delete-scenario' && t.dataset.scenarioId) store.deleteCustomScenario(t.dataset.scenarioId);
 });
 
-/* checkbox changes (policy toggles) */
+/* checkbox changes (policy toggles & trace switcher) */
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset?.rule) store.toggleRule(t.dataset.rule);
   if (t.dataset?.action === 'search') store.setSearch(t.value);
+  if (t.dataset?.action === 'select-trace-eval') store.selectEvaluation(t.value);
 });
 
 /* search input (live search) */

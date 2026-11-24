@@ -26,14 +26,14 @@ export function createStore() {
     policy: structuredClone(defaultPolicy),
 
     /* evaluation */
-    evaluation: null,
+    evaluation: persisted.length ? persisted[0] : null,
     history: persisted,
     isEvaluating: false,
     evalStage: 0,
     evalStageText: '',
 
     /* trace inspection */
-    selectedEvaluationId: null,
+    selectedEvaluationId: persisted.length ? persisted[0].id : null,
     selectedNodeId: 'decision',
 
     /* search & filter */
@@ -121,6 +121,10 @@ export function createStore() {
     setRoute(route) {
       const valid = ['console', 'simulate', 'ai', 'trace', 'builder', 'settings'];
       state.route = valid.includes(route) ? route : 'console';
+      if (state.route === 'trace' && !state.evaluation && state.history.length > 0) {
+        state.evaluation = state.history.find(e => e.id === state.selectedEvaluationId) || state.history[0];
+        state.selectedEvaluationId = state.evaluation.id;
+      }
       emit();
     },
 
@@ -129,15 +133,22 @@ export function createStore() {
       const sc = findScenario(id);
       state.scenarioId = sc.id;
       state.interventionId = sc.interventions[0].id;
-      state.evaluation = null;
-      state.selectedEvaluationId = null;
+      // If there is an evaluation in history for this scenario, link to it; otherwise keep latest
+      const match = state.history.find(e => e.scenarioId === sc.id);
+      if (match) {
+        state.evaluation = match;
+        state.selectedEvaluationId = match.id;
+      }
       state.selectedNodeId = 'decision';
       emit();
     },
     selectIntervention(id) {
       state.interventionId = id;
-      state.evaluation = null;
-      state.selectedEvaluationId = null;
+      const match = state.history.find(e => e.scenarioId === state.scenarioId && e.interventionId === id);
+      if (match) {
+        state.evaluation = match;
+        state.selectedEvaluationId = match.id;
+      }
       emit();
     },
 
@@ -160,8 +171,6 @@ export function createStore() {
     toggleRule(id) {
       const rule = state.policy.rules.find(r => r.id === id);
       if (rule) rule.enabled = !rule.enabled;
-      state.evaluation = null;
-      state.selectedEvaluationId = null;
       emit();
     },
 
