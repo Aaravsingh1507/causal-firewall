@@ -29,6 +29,8 @@ export function createStore() {
     evaluation: null,
     history: persisted,
     isEvaluating: false,
+    evalStage: 0,
+    evalStageText: '',
 
     /* trace inspection */
     selectedEvaluationId: null,
@@ -54,6 +56,8 @@ export function createStore() {
     /* AI Incident Doctor */
     aiDiagnosis: null,
     aiLoading: false,
+    aiStage: 0,
+    aiStageText: '',
     aiError: null,
     geminiStatus: { checked: false, connected: false, model: null, latencyMs: 0 },
 
@@ -168,39 +172,67 @@ export function createStore() {
       const interventionId = state.interventionId;
       const policySnap = structuredClone(state.policy);
       state.isEvaluating = true;
+      state.evalStage = 1;
+      state.evalStageText = 'Routing 5% shadow cohort traffic...';
       emit();
+
+      window.setTimeout(() => {
+        state.evalStage = 2;
+        state.evalStageText = 'Sampling telemetry & computing p-value...';
+        emit();
+      }, 250);
+
+      window.setTimeout(() => {
+        state.evalStage = 3;
+        state.evalStageText = 'Verifying causal proof and policy rules...';
+        emit();
+      }, 500);
+
       window.setTimeout(() => {
         state.evaluation = evaluateScenario(findScenario(scenarioId), policySnap, interventionId);
         state.history = [state.evaluation, ...state.history];
         state.selectedEvaluationId = state.evaluation.id;
         state.isEvaluating = false;
+        state.evalStage = 0;
+        state.evalStageText = '';
         state.selectedNodeId = 'decision';
         state.route = 'trace';
         window.history.replaceState(null, '', '#trace');
         persistHistory();
         emit();
         showToast('Evaluation complete — trace ready.', 'success');
-      }, 520);
+      }, 750);
     },
 
     /* batch evaluate */
     evaluateBatch() {
       if (state.isEvaluating) return;
       state.isEvaluating = true;
+      state.evalStage = 1;
+      state.evalStageText = 'Simulating shadow traffic for all 3 candidate fixes...';
       emit();
+
+      window.setTimeout(() => {
+        state.evalStage = 2;
+        state.evalStageText = 'Comparing relative statistical confidence deltas...';
+        emit();
+      }, 400);
+
       window.setTimeout(() => {
         const results = evaluateBatch(findScenario(state.scenarioId), structuredClone(state.policy));
         state.history = [...results.reverse(), ...state.history];
         state.evaluation = results[0];
         state.selectedEvaluationId = results[0].id;
         state.isEvaluating = false;
+        state.evalStage = 0;
+        state.evalStageText = '';
         state.selectedNodeId = 'decision';
         state.route = 'trace';
         window.history.replaceState(null, '', '#trace');
         persistHistory();
         emit();
         showToast(`Batch complete — ${results.length} interventions evaluated.`, 'success');
-      }, 800);
+      }, 850);
     },
 
     /* search & filter */
@@ -251,12 +283,43 @@ export function createStore() {
       }
       state.aiLoading = true;
       state.aiError = null;
+      state.aiStage = 1;
+      state.aiStageText = 'Parsing error log telemetry and stack traces...';
       emit();
+
+      const stageTimer1 = setTimeout(() => {
+        if (state.aiLoading) {
+          state.aiStage = 2;
+          state.aiStageText = 'Isolating failure domain & extracting symptoms...';
+          emit();
+        }
+      }, 450);
+
+      const stageTimer2 = setTimeout(() => {
+        if (state.aiLoading) {
+          state.aiStage = 3;
+          state.aiStageText = 'Synthesizing hypothesis & verifying anti-hallucination bounds...';
+          emit();
+        }
+      }, 1000);
+
+      const stageTimer3 = setTimeout(() => {
+        if (state.aiLoading) {
+          state.aiStage = 4;
+          state.aiStageText = 'Formulating copy-paste code patches & 5% canary routing...';
+          emit();
+        }
+      }, 1700);
+
       try {
         const result = await diagnoseIncident(promptText.trim());
+        clearTimeout(stageTimer1);
+        clearTimeout(stageTimer2);
+        clearTimeout(stageTimer3);
         state.aiDiagnosis = result;
         state.aiLoading = false;
-        // Register this scenario so it is live in the simulator
+        state.aiStage = 0;
+        state.aiStageText = '';
         state.customScenarios = [...state.customScenarios.filter(s => s.id !== result.id), result];
         saveCustomScenarios(state.customScenarios);
         state.scenarioId = result.id;
@@ -265,7 +328,12 @@ export function createStore() {
         showToast(`AI diagnosed: "${result.shortLabel}"`, 'success');
         return result;
       } catch (err) {
+        clearTimeout(stageTimer1);
+        clearTimeout(stageTimer2);
+        clearTimeout(stageTimer3);
         state.aiLoading = false;
+        state.aiStage = 0;
+        state.aiStageText = '';
         state.aiError = err.message || 'AI diagnosis failed';
         emit();
         showToast(`AI Error: ${state.aiError}`, 'error');

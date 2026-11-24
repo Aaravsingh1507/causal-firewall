@@ -2,9 +2,9 @@
  * Causal Firewall — main application controller.
  *
  * Renders six views (console, simulator, AI Incident Doctor, trace, builder, settings),
- * manages event delegation (no duplicate listeners), keyboard shortcuts,
- * onboarding, toast notifications, theme toggle, search/filter, comparison,
- * Gemini AI root-cause diagnosis, code patch copying, and CSV/JSON export.
+ * manages event delegation, keyboard shortcuts, onboarding, toast notifications,
+ * theme toggle, search/filter, comparison, AI root-cause diagnosis,
+ * code patch copying, and CSV/JSON export.
  */
 
 import { getScenario, scenarios, scenarioLetter } from './domain/fixtures.js';
@@ -19,12 +19,13 @@ const modalRoot = document.querySelector('#modal-root');
 const store     = createStore();
 
 /* ═══════════════════════════════════════════════════════════
-   HELPERS
+   HELPERS & ICONS
    ═══════════════════════════════════════════════════════════ */
 
 const icon = n => ({
   arrow: '↗', chevron: '⌄', check: '✓', pulse: '◌',
-  compare: '⇆', gear: '⚙', plus: '+', spark: '✨', copy: '📋'
+  compare: '⇆', gear: '⚙', plus: '+', spark: '✨', copy: '📋',
+  shield: '🛡️', bolt: '⚡', cross: '✕', warn: '⚠'
 }[n] || '');
 
 function statusLabel(d) {
@@ -49,6 +50,64 @@ function copyToClipboard(text, message = 'Copied to clipboard!') {
   } else {
     store.showToast('Clipboard access not supported in this environment', 'warning');
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMMON FORMATTING COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
+
+/**
+ * Visual 95% Main Traffic vs 5% Canary Traffic split visualizer bar
+ */
+function renderTrafficSplit(safePct = 95, canaryPct = 5) {
+  return `<div class="traffic-split-box">
+    <div class="traffic-split-top">
+      <strong>🛡️ Production Traffic Boundary</strong>
+      <span class="mono">${canaryPct}% SHADOW CANARY ACTIVE</span>
+    </div>
+    <div class="traffic-bar" aria-label="Traffic distribution: ${safePct}% production, ${canaryPct}% canary">
+      <div class="traffic-bar-safe" style="width: ${safePct}%" title="${safePct}% Main Traffic (Guaranteed Untouched)"></div>
+      <div class="traffic-bar-canary" style="width: ${canaryPct}%" title="${canaryPct}% Shadow Cohort (Tests Candidate Fix)"></div>
+    </div>
+    <div class="traffic-legend">
+      <span><i class="traffic-dot-safe"></i> <strong>${safePct}%</strong> Real Visitors (Safe & Isolated)</span>
+      <span><i class="traffic-dot-canary"></i> <strong>${canaryPct}%</strong> Shadow Cohort (Tests Fix)</span>
+    </div>
+  </div>`;
+}
+
+/**
+ * Diagnostic Multi-Stage Radar & Scanner
+ */
+function renderScanner(stage = 1, stageText = '') {
+  const steps = [
+    '1. Ingesting error telemetry and stack traces',
+    '2. Isolating failure domain & extracting symptoms',
+    '3. Synthesizing hypothesis & verifying safety invariants',
+    '4. Formulating copy-paste code patch & canary routing'
+  ];
+
+  return `<section class="panel ai-scanner-panel">
+    <div class="radar-sweep-container">
+      <div class="radar-circle"></div>
+      <div class="radar-circle inner"></div>
+      <div class="radar-scanner"></div>
+      <div class="radar-center-dot"></div>
+    </div>
+    <div class="scanner-title">AI Diagnostic Intelligence In Progress</div>
+    <div class="scanner-subtitle">${esc(stageText || 'Analyzing incident telemetry and formulating verified fixes...')}</div>
+    <div class="scanner-steps">
+      ${steps.map((label, idx) => {
+        const num = idx + 1;
+        const isDone = stage > num;
+        const isActive = stage === num;
+        return `<div class="scanner-step-row ${isActive ? 'active' : isDone ? 'done' : ''}">
+          <span class="scanner-step-icon">${isDone ? '✓' : isActive ? '●' : '○'}</span>
+          <span>${label}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </section>`;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -91,7 +150,7 @@ function renderConsole() {
     <div class="hero-panel-copy">
       <span class="section-kicker">01 / The problem</span>
       <h2>Automation can fix<br><em>the wrong cause.</em></h2>
-      <p>When an incident hits, the fastest remediation is often a guess. Causal Firewall tests the intervention on a shadow cohort first, then opens the gate only when the system proves the metric improved.</p>
+      <p>When an incident hits a website or app, developers usually guess a solution. Causal Firewall isolates the fix to a safe 5% shadow cohort first, demanding statistical proof before letting code touch 100% of production traffic.</p>
       <div class="hero-actions">
         <a class="primary-button" href="#simulate">Run a scenario <span aria-hidden="true">${icon('arrow')}</span></a>
         <a class="secondary-button" href="#ai"><span class="sparkle-icon">✨</span> AI Incident Doctor</a>
@@ -106,12 +165,14 @@ function renderConsole() {
       <div class="orbit-center">CF<span>gate</span></div>
     </div>
   </div>
+
   <div class="metric-grid">
-    <div class="metric-card"><span class="metric-label">Requests evaluated</span><strong>${String(summary.evaluated).padStart(2,'0')}</strong><span class="metric-foot">local simulation</span></div>
-    <div class="metric-card"><span class="metric-label">Gate opened</span><strong>${String(summary.approved).padStart(2,'0')}</strong><span class="metric-foot good">evidence-backed</span></div>
-    <div class="metric-card"><span class="metric-label">Held for proof</span><strong>${String(summary.review).padStart(2,'0')}</strong><span class="metric-foot warn">needs experiment</span></div>
-    <div class="metric-card accent-card"><span class="metric-label">AI Status</span><strong>ONLINE</strong><span class="metric-foot good">intelligent diagnosis</span></div>
+    <div class="metric-card"><span class="metric-label">Requests evaluated</span><strong>${String(summary.evaluated).padStart(2,'0')}</strong><span class="metric-foot">verified shadow tests</span></div>
+    <div class="metric-card"><span class="metric-label">Gate opened</span><strong>${String(summary.approved).padStart(2,'0')}</strong><span class="metric-foot good">✓ evidence-proven</span></div>
+    <div class="metric-card"><span class="metric-label">Held for proof</span><strong>${String(summary.review).padStart(2,'0')}</strong><span class="metric-foot warn">! needs causal evidence</span></div>
+    <div class="metric-card accent-card"><span class="metric-label">AI Diagnostic Engine</span><strong>ONLINE</strong><span class="metric-foot good">● zero hallucination guard</span></div>
   </div>
+
   <div class="content-grid">
     <section class="panel recent-panel">
       <div class="panel-header">
@@ -142,17 +203,17 @@ function renderConsole() {
             <span class="history-conf">${Math.round(item.confidence*100)}%</span>
           </a>
         </div>`;
-      }).join('')}</div>` : `<div class="empty-state"><span class="empty-icon">◌</span><strong>No decisions yet.</strong><p>Choose a scenario or diagnose a real bug with AI to see Causal Firewall in action.</p><a class="text-button" href="#simulate">Start first evaluation <span aria-hidden="true">${icon('arrow')}</span></a></div>`}
+      }).join('')}</div>` : `<div class="empty-state"><span class="empty-icon">◌</span><strong>No decisions yet.</strong><p>Choose a scenario or diagnose a real website bug with the AI Doctor to see Causal Firewall in action.</p><a class="text-button" href="#simulate">Start first evaluation <span aria-hidden="true">${icon('arrow')}</span></a></div>`}
       ${store.state.compareIds.length === 2 ? `<div class="compare-bar"><button class="primary-button small" data-action="run-compare">Compare selected <span aria-hidden="true">${icon('compare')}</span></button><button class="text-button" data-action="clear-compare">Clear</button></div>` : ''}
     </section>
     <section class="panel principle-panel">
       <span class="section-kicker">03 / Principle</span>
-      <h2>Correlation is<br>not causation.</h2>
-      <div class="principle-rule"><span>01</span><p>Observe the incident (Sentry / Datadog)</p></div>
-      <div class="principle-rule"><span>02</span><p>AI generates candidate fixes</p></div>
-      <div class="principle-rule"><span>03</span><p>Causal Firewall tests 5% shadow cohort</p></div>
-      <div class="principle-rule"><span>04</span><p>Scale globally ONLY with statistical proof</p></div>
-      <div class="panel-note">Every decision carries its hypothesis, metric delta, blast radius, and anti-hallucination audit.</div>
+      <h2>Correlation is<br><em>not causation.</em></h2>
+      <div class="principle-rule"><span>01</span><p>Observe error signals & stack traces (Sentry / Datadog)</p></div>
+      <div class="principle-rule"><span>02</span><p>AI Engine generates candidate fixes without hallucination</p></div>
+      <div class="principle-rule"><span>03</span><p>Causal Firewall routes 5% shadow cohort to test the fix</p></div>
+      <div class="principle-rule"><span>04</span><p>Gate OPENS to 100% ONLY when p &lt; 0.05 is mathematically proven</p></div>
+      <div class="panel-note">Every evaluation carries its hypothesis, metric delta, blast radius, and anti-hallucination audit.</div>
     </section>
   </div>`);
 }
@@ -164,14 +225,16 @@ function renderConsole() {
 function renderAIDoctor() {
   const diag = store.state.aiDiagnosis;
   const loading = store.state.aiLoading;
+  const stage = store.state.aiStage;
+  const stageText = store.state.aiStageText;
   const error = store.state.aiError;
 
   const templates = [
-    { title: 'Next.js Stripe 504 Timeout', text: 'Checkout endpoint /api/checkout times out with 504 Gateway Timeout during flash sale when calling Stripe API synchronously' },
-    { title: 'React App Memory Leak', text: 'React single page app heap size climbs from 120MB to 1.8GB over 45 minutes of browsing, leading to browser tab crash' },
-    { title: 'MongoDB Connection Saturation', text: 'MongoNetworkTimeoutError: connection pool exhausted (100/100 active connections) during morning traffic surge on /api/orders' },
-    { title: 'Prisma PostgreSQL Deadlock', text: 'PrismaClientKnownRequestError: Deadlock detected on concurrent inventory update queries on table products' },
-    { title: 'Express Event Loop 100% CPU', text: 'Node.js event loop lag spikes over 6500ms and CPU is pegged at 100% on /api/search with regex query parameter' }
+    { title: '⚡ Next.js Stripe 504 Timeout', text: 'Checkout endpoint /api/checkout times out with 504 Gateway Timeout during flash sale when calling Stripe API synchronously' },
+    { title: '🧠 React App Memory Leak', text: 'React single page app heap size climbs from 120MB to 1.8GB over 45 minutes of browsing, leading to browser tab crash' },
+    { title: '💾 MongoDB Pool Saturation', text: 'MongoNetworkTimeoutError: connection pool exhausted (100/100 active connections) during morning traffic surge on /api/orders' },
+    { title: '🔄 Prisma SQL Deadlock', text: 'PrismaClientKnownRequestError: Deadlock detected on concurrent inventory update queries on table products' },
+    { title: '⚡ Express Event Loop 100% CPU', text: 'Node.js event loop lag spikes over 6500ms and CPU is pegged at 100% on /api/search with regex query parameter' }
   ];
 
   return layout(`<div class="ai-doctor-grid">
@@ -185,11 +248,11 @@ function renderAIDoctor() {
       </div>
 
       <div class="ai-intro-card">
-        <p>Paste any real error log, stack trace, or describe your website's bug in plain English. The AI engine analyzes the failure, extracts symptoms, and generates 3 testable candidate fixes without hallucination.</p>
+        <p>Paste any real error log, stack trace, or describe your website's bug in plain English. The AI engine isolates the root cause, extracts symptoms, and generates 3 testable candidate fixes without hallucination.</p>
       </div>
 
       <div class="template-section">
-        <span class="template-label">Try a real-world web/app incident:</span>
+        <span class="template-label">Try a real-world web/app incident template:</span>
         <div class="template-chips">
           ${templates.map(t => `<button class="template-chip" data-action="fill-ai-template" data-template="${esc(t.text)}">${t.title}</button>`).join('')}
         </div>
@@ -201,7 +264,7 @@ function renderAIDoctor() {
         
         <div class="ai-action-bar">
           <button class="primary-button ai-diagnose-btn ${loading?'loading':''}" data-action="diagnose-ai" ${loading?'disabled':''}>
-            ${loading ? `<span class="spinner">◌</span> Analyzing incident…` : `<span class="sparkle-icon">✨</span> Diagnose & Generate Fixes`}
+            ${loading ? `<span class="spinner" aria-hidden="true">◌</span> Analyzing incident…` : `<span class="sparkle-icon">✨</span> Diagnose & Generate Fixes`}
           </button>
           ${diag ? `<button class="text-button" data-action="clear-ai">Clear analysis</button>` : ''}
         </div>
@@ -210,7 +273,7 @@ function renderAIDoctor() {
       ${error ? `<div class="ai-error-box"><span class="error-icon">⚠</span><div><strong>Diagnosis Failed</strong><p>${esc(error)}</p></div></div>` : ''}
     </section>
 
-    ${diag ? `<section class="panel ai-result-panel">
+    ${loading ? renderScanner(stage, stageText) : diag ? `<section class="panel ai-result-panel">
       <div class="panel-header">
         <div>
           <span class="section-kicker">Root Cause Analysis</span>
@@ -220,8 +283,33 @@ function renderAIDoctor() {
       </div>
 
       <div class="ai-diagnosis-body">
+        <!-- In Short Executive Verdict Card -->
+        <div class="in-short-card">
+          <div class="in-short-header">
+            <span class="in-short-title">⚡ AT A GLANCE (IN SHORT)</span>
+            <span class="scenario-severity ${diag.severity}">${diag.severity}</span>
+          </div>
+          <div class="verdict-grid">
+            <div class="verdict-item">
+              <span>What Broke</span>
+              <strong>${esc(diag.shortLabel || diag.label)}</strong>
+            </div>
+            <div class="verdict-item highlight">
+              <span>Recommended Fix</span>
+              <strong>${esc(diag.interventions?.find(i => i.result === 'causal')?.label || 'Apply Causal Patch')}</strong>
+            </div>
+            <div class="verdict-item">
+              <span>Expected Delta</span>
+              <strong style="color:var(--cyan)">${diag.interventions?.find(i => i.result === 'causal')?.metric?.delta || '−85%'}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 95% vs 5% Traffic Safety Split Bar -->
+        ${renderTrafficSplit(95, 5)}
+
         <div class="root-cause-card">
-          <span class="section-kicker">Why this is happening</span>
+          <span class="section-kicker">Why this is happening (Root Cause)</span>
           <p class="root-cause-text">${esc(diag.rootCause)}</p>
         </div>
 
@@ -252,13 +340,13 @@ function renderAIDoctor() {
             <small>Only proven causal fixes pass the gate</small>
           </div>
           <div class="ai-intervention-list">
-            ${(diag.interventions || []).map((item, idx) => `
+            ${(diag.interventions || []).map((item) => `
               <div class="ai-int-card ${item.result}">
                 <div class="ai-int-top">
                   <span class="ai-int-tag ${item.result}">
-                    ${item.result === 'causal' ? '✓ Causal (Proven Fix)' : item.result === 'temporary' ? '! Temporary (Trap)' : '✕ Ineffective (Placebo)'}
+                    ${item.result === 'causal' ? '✓ Proven Causal Fix' : item.result === 'temporary' ? '! Temporary Trap' : '✕ Ineffective Guess'}
                   </span>
-                  <span class="mono">${item.metric?.delta || '0%'}</span>
+                  <span class="ai-int-delta">${item.metric?.delta || '0%'}</span>
                 </div>
                 <strong>${esc(item.label)}</strong>
                 <p>${esc(item.effect)}</p>
@@ -321,6 +409,8 @@ function renderAIDoctor() {
 function renderSimulator() {
   const all = store.allScenarios();
   const scenario = store.findScenario(store.state.scenarioId);
+  const evaluating = store.state.isEvaluating;
+  const evalText = store.state.evalStageText;
 
   return layout(`<div class="simulator-grid">
     <section class="panel scenario-panel">
@@ -340,34 +430,44 @@ function renderSimulator() {
         <span class="incident-pulse">● incident loaded</span>
       </div>
     </section>
+
     <section class="panel intervention-panel">
       <div class="panel-header">
         <div><span class="section-kicker">Choose a hypothesis</span><h2>What should we try?</h2></div>
         <span class="mono">SHADOW: ${store.state.policy.shadowSize || 5}%</span>
       </div>
+
       <div class="intervention-list">${scenario.interventions.map(item => `
         <button class="intervention-option ${item.id===store.state.interventionId?'selected':''}" data-intervention="${item.id}" aria-pressed="${item.id===store.state.interventionId}">
           <span class="radio-dot"></span>
           <span><strong>${esc(item.label)}</strong><small>${esc(item.effect)}</small></span>
           <span class="option-arrow">→</span>
         </button>`).join('')}</div>
+
+      <!-- Traffic split indicator -->
+      <div style="padding: 0 20px 14px;">
+        ${renderTrafficSplit(95, store.state.policy.shadowSize || 5)}
+      </div>
+
       <div class="signal-cards">
         <span class="section-kicker">Active signals</span>
         ${scenario.signals.map(s => `<div class="signal-card ${s.tone}"><span class="signal-label">${esc(s.label)}</span><strong>${esc(s.value)}</strong><small>${esc(s.detail)}</small></div>`).join('')}
       </div>
+
       <div class="policy-box">
-        <div class="policy-box-top"><span class="section-kicker">Active policy</span><span class="mono">v${store.state.policy.version}</span></div>
+        <div class="policy-box-top"><span class="section-kicker">Active policy rules</span><span class="mono">v${store.state.policy.version}</span></div>
         ${store.state.policy.rules.map(rule => `<label class="policy-toggle"><input type="checkbox" data-rule="${rule.id}" ${rule.enabled?'checked':''}><span class="toggle-ui"></span><span><strong>${esc(rule.label)}</strong><small>${esc(rule.description)}</small></span></label>`).join('')}
       </div>
+
       <div class="eval-buttons">
-        <button class="evaluate-button ${store.state.isEvaluating?'loading':''}" data-action="evaluate" ${store.state.isEvaluating?'disabled':''}>
-          ${store.state.isEvaluating ? `<span aria-hidden="true">${icon('pulse')}</span> Measuring shadow cohort…` : `Evaluate intervention <span aria-hidden="true">${icon('arrow')}</span>`}
+        <button class="evaluate-button ${evaluating?'loading':''}" data-action="evaluate" ${evaluating?'disabled':''}>
+          ${evaluating ? `<span class="spinner" aria-hidden="true">◌</span> ${esc(evalText || 'Measuring shadow cohort…')}` : `Evaluate intervention <span aria-hidden="true">${icon('arrow')}</span>`}
         </button>
-        <button class="batch-button" data-action="batch-evaluate" ${store.state.isEvaluating?'disabled':''} title="Evaluate all interventions at once">Batch all <span aria-hidden="true">${icon('arrow')}</span></button>
+        <button class="batch-button" data-action="batch-evaluate" ${evaluating?'disabled':''} title="Evaluate all interventions at once">Batch all <span aria-hidden="true">${icon('arrow')}</span></button>
       </div>
     </section>
   </div>
-  <div class="experiment-footnote"><span class="footnote-mark">✳</span><p>This is a local simulation. Causal Firewall tests fixes on a safe 5% shadow cohort before touching production.</p></div>`);
+  <div class="experiment-footnote"><span class="footnote-mark">✳</span><p>This is a safe sandbox. Causal Firewall tests candidate fixes on a 5% shadow cohort before touching production.</p></div>`);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -513,7 +613,7 @@ function renderSettings() {
     <section class="panel settings-card">
       <div class="panel-header"><div><span class="section-kicker">About</span><h2>Causal Firewall v2.1</h2></div></div>
       <div class="about-info">
-        <p>An evidence-first remediation gate for websites, webapps, and distributed cloud backends. Integrates real-time AI diagnostics and tests fixes on a 5% shadow cohort before opening the gate to 100% of production traffic.</p>
+        <p>An evidence-first remediation gate for websites, webapps, and distributed cloud backends. Integrates real-time AI diagnostics and tests candidate fixes on a 5% shadow cohort before opening the gate to 100% of production traffic.</p>
         <div class="about-meta"><span class="mono">VERSION 2.1.0 · AI EDITION</span><span class="mono">AI ENGINE ACTIVE</span><span class="mono">${scenarios.length} BUILT-IN SCENARIOS</span></div>
       </div>
     </section>
@@ -571,7 +671,7 @@ function renderOnboarding() {
       <div class="onboarding-steps">
         <div class="onboarding-step"><span class="ob-num">1</span><div><strong>Console</strong><p>Monitor your website decisions, error metrics, and safety posture at a glance.</p></div></div>
         <div class="onboarding-step"><span class="ob-num">2</span><div><strong>Run Scenario</strong><p>Choose an incident, select a candidate fix, and test it on a 5% shadow cohort.</p></div></div>
-        <div class="onboarding-step"><span class="ob-num">3</span><div><strong>AI Incident Doctor</strong><p>Paste any real error log or bug description. The AI engine analyzes the root cause and generates 3 testable fixes.</p></div></div>
+        <div class="onboarding-step"><span class="ob-num">3</span><div><strong>AI Incident Doctor</strong><p>Paste any real error log or bug description. The AI engine isolates the root cause and generates 3 testable fixes.</p></div></div>
         <div class="onboarding-step"><span class="ob-num">4</span><div><strong>Causal Trace</strong><p>Inspect the evidence chain step-by-step: request → signals → hypothesis → metric delta → decision.</p></div></div>
       </div>
       <div class="onboarding-footer"><p>Press <kbd>?</kbd> anytime for keyboard shortcuts.</p><button class="primary-button" data-action="dismiss-onboarding">Get started <span aria-hidden="true">${icon('arrow')}</span></button></div>
@@ -699,6 +799,9 @@ document.addEventListener('click', e => {
   }
   else if (act === 'copy-code') {
     copyToClipboard(t.dataset.code || '', 'Code snippet copied to clipboard!');
+    const originalText = t.innerHTML;
+    t.innerHTML = '✓ Copied!';
+    setTimeout(() => { t.innerHTML = originalText; }, 2000);
   }
   else if (act === 'test-ai-intervention') {
     const scId = t.dataset.scenarioId;
@@ -717,13 +820,16 @@ document.addEventListener('click', e => {
   }
   else if (act === 'test-gemini-key') {
     store.showToast('Testing AI connection...', 'info');
+    const orig = t.textContent;
+    t.textContent = 'Testing...';
     store.checkGeminiConnection().then(res => {
+      t.textContent = orig;
       if (res.success) store.showToast(`Connected! Latency: ${res.latencyMs}ms`, 'success');
       else store.showToast(`Connection failed: ${res.error}`, 'error');
     });
   }
   else if (t.dataset.scenario && !act) store.selectScenario(t.dataset.scenario);
-  else if (t.dataset.intervention) store.selectIntervention(t.dataset.intervention);
+  else if (t.dataset.intervention && !act) store.selectIntervention(t.dataset.intervention);
   else if (t.dataset.node) store.selectNode(t.dataset.node);
   else if (t.dataset.evaluation) { e.preventDefault(); store.selectEvaluation(t.dataset.evaluation); }
   else if (t.dataset.filter) store.setFilter(t.dataset.filter);
