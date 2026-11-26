@@ -29,14 +29,20 @@
         <span class="runtime-pill ai-pill"><i></i> AI Diagnostics Online</span>
         <span class="runtime-pill"><i></i> Shadow Gate Active</span>
         <button class="header-icon-btn" data-action="toggle-theme" aria-label="Toggle theme" title="Toggle light/dark theme">◐</button>
-        <button class="header-icon-btn" data-action="show-shortcuts" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">⌨</button>
+        <button class="header-icon-btn desktop-only-btn" data-action="show-shortcuts" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">⌨</button>
         <button class="header-icon-btn" data-action="show-help" aria-label="Help" title="Show onboarding guide">?</button>
+        <button class="header-icon-btn mobile-menu-btn" data-action="toggle-mobile-nav" aria-label="Open navigation menu" aria-expanded="false">☰</button>
         <span class="build-label">BUILD 2.1.0 · AI EDITION</span>
       </div>
     </div>
   </header>
+  <div class="sidebar-backdrop" data-action="close-mobile-nav" aria-hidden="true"></div>
   <main class="app-shell">
     <aside class="sidebar" aria-label="Primary navigation">
+      <div class="sidebar-mobile-head">
+        <span class="eyebrow">Navigation</span>
+        <button class="modal-close" data-action="close-mobile-nav" aria-label="Close menu">✕</button>
+      </div>
       <div class="sidebar-intro"><span class="eyebrow">Remediation gate</span><p>Prove the fix before you scale the fix.</p></div>
       <nav class="side-nav">
         <a class="nav-link active" href="#console" data-route="console"><span class="nav-index">01</span><span class="nav-text">Console</span><span class="nav-arrow">↗</span></a>
@@ -52,6 +58,28 @@
     <section class="workspace" id="app"></section>
   </main>
   <footer class="app-footer"><div class="app-footer-inner"><span>CAUSAL FIREWALL / EVIDENCE-FIRST AI REMEDIATION GATE</span><span>AUTOPILOT ENGINE · SHADOW COHORT VERIFIED</span></div></footer>
+  <nav class="mobile-bottom-nav" aria-label="Quick mobile navigation">
+    <a class="mobile-bottom-link active" href="#console" data-route="console">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Console</span>
+    </a>
+    <a class="mobile-bottom-link" href="#simulate" data-route="simulate">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+      <span>Simulate</span>
+    </a>
+    <a class="mobile-bottom-link" href="#ai" data-route="ai">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M5 19l1-2.5L8.5 15.5 6 14.5 5 12l-1 2.5L1.5 15.5 4 16.5 5 19z"/></svg>
+      <span>AI Doctor</span>
+    </a>
+    <a class="mobile-bottom-link" href="#audit" data-route="audit">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Auditor</span>
+    </a>
+    <button type="button" class="mobile-bottom-link mobile-bottom-more" data-action="toggle-mobile-nav">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      <span>Menu</span>
+    </button>
+  </nav>
   <div id="toast-container" aria-live="polite"></div>
   <div id="modal-root"></div>
   <p class="sr-only" id="status-message" role="status" aria-live="polite"></p>

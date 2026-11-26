@@ -59,6 +59,7 @@ export function createStore() {
     /* onboarding */
     showOnboarding: !prefs.onboardingDone,
     showShortcuts: false,
+    mobileNavOpen: false,
 
     /* AI Incident Doctor */
     aiDiagnosis: null,
@@ -140,10 +141,20 @@ export function createStore() {
     setRoute(route) {
       const valid = ['console', 'simulate', 'ai', 'audit', 'trace', 'builder', 'settings'];
       state.route = valid.includes(route) ? route : 'console';
+      state.mobileNavOpen = false;
       if (state.route === 'trace' && !state.evaluation && state.history.length > 0) {
         state.evaluation = state.history.find(e => e.id === state.selectedEvaluationId) || state.history[0];
         state.selectedEvaluationId = state.evaluation.id;
       }
+      emit();
+    },
+    toggleMobileNav() {
+      state.mobileNavOpen = !state.mobileNavOpen;
+      emit();
+    },
+    closeMobileNav() {
+      if (!state.mobileNavOpen) return;
+      state.mobileNavOpen = false;
       emit();
     },
 

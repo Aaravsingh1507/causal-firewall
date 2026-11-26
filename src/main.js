@@ -1248,12 +1248,30 @@ function render() {
     : r === 'settings' ? renderSettings()
     : renderConsole();
 
-  // Nav active states
+  // Nav active states (desktop drawer + mobile quick bar)
   document.querySelectorAll('.nav-link').forEach(link => {
     const active = link.dataset.route === r;
     link.classList.toggle('active', active);
     active ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current');
   });
+
+  document.querySelectorAll('.mobile-bottom-link[data-route]').forEach(link => {
+    const active = link.dataset.route === r;
+    link.classList.toggle('active', active);
+    active ? link.setAttribute('aria-current', 'page') : link.removeAttribute('aria-current');
+  });
+
+  const moreBtn = document.querySelector('.mobile-bottom-more');
+  if (moreBtn) {
+    moreBtn.classList.toggle('active', ['trace', 'builder', 'settings'].includes(r) || store.state.mobileNavOpen);
+  }
+
+  // Mobile navigation drawer state
+  const navOpen = Boolean(store.state.mobileNavOpen);
+  document.querySelector('.sidebar')?.classList.toggle('open', navOpen);
+  document.querySelector('.sidebar-backdrop')?.classList.toggle('open', navOpen);
+  document.querySelector('.mobile-menu-btn')?.setAttribute('aria-expanded', String(navOpen));
+  document.body.classList.toggle('mobile-nav-open', navOpen);
 
   // Status message
   const status = document.querySelector('#status-message');
@@ -1265,12 +1283,23 @@ function render() {
         : '';
   }
 
-  // Modals
+  // Modals (avoid re-triggering entry animations when the same modal stays open)
+  let modalKey = '';
   let modalHTML = '';
-  if (store.state.showOnboarding) modalHTML = renderOnboarding();
-  else if (store.state.showShortcuts) modalHTML = renderShortcuts();
-  else if (store.state.compareIds.length === 2 && store.state._showCompare) modalHTML = renderComparisonModal();
-  modalRoot.innerHTML = modalHTML;
+  if (store.state.showOnboarding) {
+    modalKey = 'onboarding';
+    modalHTML = renderOnboarding();
+  } else if (store.state.showShortcuts) {
+    modalKey = 'shortcuts';
+    modalHTML = renderShortcuts();
+  } else if (store.state.compareIds.length === 2 && store.state._showCompare) {
+    modalKey = 'compare:' + store.state.compareIds.join(',');
+    modalHTML = renderComparisonModal();
+  }
+  if (modalRoot.dataset.modalKey !== modalKey) {
+    modalRoot.dataset.modalKey = modalKey;
+    modalRoot.innerHTML = modalHTML;
+  }
 
   // Toast
   renderToast();
@@ -1285,19 +1314,23 @@ function render() {
    ═══════════════════════════════════════════════════════════ */
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-action], [data-scenario], [data-intervention], [data-node], [data-evaluation], [data-rule], [data-filter], [data-compare], [data-scenario-id]');
+  const t = e.target.closest('[data-action], [data-route], [data-scenario], [data-intervention], [data-node], [data-evaluation], [data-rule], [data-filter], [data-compare], [data-scenario-id]');
   if (!t) return;
+  if (t.classList.contains('modal-overlay') && e.target !== t) return;
 
   const act = t.dataset.action;
 
   if (act === 'evaluate') store.evaluate();
   else if (act === 'batch-evaluate') store.evaluateBatch();
+  else if (act === 'toggle-mobile-nav') store.toggleMobileNav();
+  else if (act === 'close-mobile-nav') store.closeMobileNav();
+  else if (t.dataset.route && !act) store.closeMobileNav();
   else if (act === 'toggle-theme') store.toggleTheme();
   else if (act === 'show-shortcuts') store.toggleShortcuts();
   else if (act === 'toggle-shortcuts') store.toggleShortcuts();
   else if (act === 'show-help') store.showOnboardingModal();
   else if (act === 'dismiss-onboarding') store.dismissOnboarding();
-  else if (act === 'close-modal') { store.state._showCompare = false; store.toggleShortcuts(); }
+  else if (act === 'close-modal') { store.state._showCompare = false; store.state.showShortcuts = false; render(); }
   else if (act === 'export-json') exportAsJSON(store.state.history);
   else if (act === 'export-csv') exportAsCSV(store.state.history);
   else if (act === 'clear-history') store.clearHistory();
@@ -1472,7 +1505,8 @@ document.addEventListener('keydown', e => {
   else if (e.key === 't' || e.key === 'T') store.toggleTheme();
   else if (e.key === '?') store.toggleShortcuts();
   else if (e.key === 'Escape') {
-    if (store.state.showOnboarding) store.dismissOnboarding();
+    if (store.state.mobileNavOpen) store.closeMobileNav();
+    else if (store.state.showOnboarding) store.dismissOnboarding();
     else if (store.state.showShortcuts) store.toggleShortcuts();
     else if (store.state._showCompare) { store.state._showCompare = false; render(); }
   }
