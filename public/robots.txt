@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://causal-firewall-main.vercel.app/sitemap.xml
