@@ -207,7 +207,7 @@ function renderConsole() {
             <span class="history-conf">${Math.round(item.confidence*100)}%</span>
           </a>
         </div>`;
-      }).join('')}</div>` : `<div class="empty-state"><span class="empty-icon">◌</span><strong>No decisions yet.</strong><p>Choose a scenario or diagnose a real website bug with the AI Doctor to see Causal Firewall in action.</p><a class="text-button" href="#simulate">Start first evaluation <span aria-hidden="true">${icon('arrow')}</span></a></div>`}
+      }).join('')}</div>` : `<div class="empty-state"><span class="empty-icon">◌</span><strong>No decisions yet.</strong><p>Choose a scenario, audit a live website URL, or diagnose a bug with AI Doctor to see Causal Firewall in action.</p><div class="empty-actions"><a class="primary-button small" href="#simulate">Start first evaluation <span aria-hidden="true">${icon('arrow')}</span></a><a class="secondary-button small" href="#audit">Audit a URL <span aria-hidden="true">${icon('arrow')}</span></a></div></div>`}
       ${store.state.compareIds.length === 2 ? `<div class="compare-bar"><button class="primary-button small" data-action="run-compare">Compare selected <span aria-hidden="true">${icon('compare')}</span></button><button class="text-button" data-action="clear-compare">Clear</button></div>` : ''}
     </section>
     <section class="panel principle-panel">
