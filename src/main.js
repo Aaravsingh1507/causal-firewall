@@ -166,7 +166,7 @@ function renderConsole() {
       <div class="orbit-node node-request">REQUEST<span>incident detected</span></div>
       <div class="orbit-node node-test">TEST<span>5% shadow cohort</span></div>
       <div class="orbit-node node-proof">PROOF<span>causal delta</span></div>
-      <div class="orbit-center">CF<span>gate</span></div>
+      <div class="orbit-center"><img src="/logo.png" alt="Causal Firewall" class="orbit-logo" /></div>
     </div>
   </div>
 

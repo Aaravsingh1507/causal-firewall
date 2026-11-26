@@ -1,146 +1,150 @@
-# Causal Firewall
-
-> **"An AI-powered safety gate for websites and web apps that proves a fix works before letting it touch 100% of your users."**
-
-**Live Web App**: [https://causal-firewall-main.vercel.app](https://causal-firewall-main.vercel.app)
-
----
-
-## What is Causal Firewall? (In Plain Words)
-
-When a website or web app breaks (e.g. checkout spins forever, server throws 504 Bad Gateway, or database runs out of connections), developers and automated AI bots usually **guess** a solution:
-* *"Let me restart the server!"*
-* *"Let me clear the cache!"*
-* *"Let me upgrade the server RAM!"*
-
-Most of the time, guessing makes things **worse**. Restarting a server might bring it down for everyone, or kick shoppers out of checkout, while the underlying bug remains untouched.
-
-**Causal Firewall stops guessing.**
-1. **Live Site Auditor** lets you paste any live website or webapp link to inspect real HTTP responses, missing security headers, broken scripts/styles, and high-traffic crash readiness — with zero fake numbers.
-2. **The AI Diagnostic Engine** analyzes your website errors or audit findings and isolates the true root cause.
-3. It generates **candidate fixes** and provides ready-to-use code solutions.
-4. Instead of blindly pushing fixes to 100% of your visitors, **Causal Firewall tests them on a safe 5% slice of traffic (a shadow cohort)** before rollout.
-5. If the speed improves and errors drop ($p < 0.05$), the **Gate OPENS** and the fix is approved. If it doesn't work, the **Gate HOLDS (Blocks)**, protecting the other 95% of your users!
+<div align="center">
+  <img src="./public/logo.png" alt="Causal Firewall Logo" width="128" />
+  <h1>Causal Firewall</h1>
+  <p>
+    <strong>Audit live websites, isolate real root causes, and prove every fix on 5% traffic before touching 100% of users.</strong>
+  </p>
+  <p>
+    <a href="https://causal-firewall-main.vercel.app"><strong>Launch Live Web App &rarr;</strong></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/Live-causal--firewall--main.vercel.app-00e5bf?style=flat-square&labelColor=070e12" alt="Live App" />
+    <img src="https://img.shields.io/badge/Tests-49%20Passing-10b981?style=flat-square&labelColor=070e12" alt="49 Tests Passing" />
+    <img src="https://img.shields.io/badge/Security-SSRF%20%26%20CSP%20Hardened-00b395?style=flat-square&labelColor=070e12" alt="Security Hardened" />
+    <img src="https://img.shields.io/badge/Telemetry-Zero%20Fake%20Data-3b82f6?style=flat-square&labelColor=070e12" alt="Zero Fake Data" />
+  </p>
+</div>
 
 ---
 
-## Why Does It Exist? (Its Purpose)
+## What Is Causal Firewall? (In Plain English)
 
-1. **Stop Outage Panic**: During a downtime incident, it replaces panicky guesswork with evidence.
-2. **Prevent AI Hallucinations in Production**: AI agents are great at generating code patches, but they can hallucinate bad fixes that delete data or break APIs. Causal Firewall acts as an **automated bouncer** that demands statistical proof before any AI fix is rolled out globally.
-3. **Zero-Risk 5% Testing**: If a fix fails or makes latency worse, only 5% of simulated traffic felt it. The other 95% of real users are never harmed.
-4. **Instant Code Solutions**: Gives developers the exact, copy-pasteable code snippet to fix their problem in Node.js, Next.js, Express, React, or Cloudflare.
+When a website or web app slows down, throws errors, or gets flagged for security gaps, teams usually **guess** a quick fix under pressure:
 
----
+- *"Let's restart the server."*
+- *"Let's clear the cache or add more RAM."*
+- *"Let's deploy an unverified AI patch directly to all visitors."*
 
-## How to Use It for Different Tasks
+Guessing in production is risky — restarting servers kicks users out of checkout, and unverified patches often mask symptoms or break something else for 100% of your visitors.
 
-### Task 1: Diagnose a Real Website Error with the AI Doctor
-1. Click **`03 AI Doctor`** in the left sidebar (or press <kbd>3</kbd> on your keyboard).
-2. Paste any real error log, stack trace, or describe your problem in simple English:
-   > *"Our Next.js checkout page freezes on /api/checkout and throws 504 Gateway Timeout during flash sales."*
-   *(Or click one of the quick template pills at the top!)*
-3. Click **"Diagnose & Generate Fixes"**.
-4. In under 2 seconds, the AI engine will give you:
-   * **Root Cause Explanation**: Why it broke in simple words.
-   * **Anti-Hallucination Audit**: Confirms why the fix is safe.
-   * **3 Candidate Fixes**: One causal fix, one common trap, and one useless guess.
-   * **Copy-Paste Code Patch**: Ready to drop into your website's code!
-5. Click **"Test 5% Shadow Cohort"** on any fix to see Causal Firewall run the statistical verification!
+**Causal Firewall acts as a smart safety gate in front of your fixes:**
 
----
-
-### Task 2: Test a Server Fix on a 5% Shadow Cohort
-1. Click **`02 Run scenario`** (or press <kbd>2</kbd>).
-2. Select any of the **8 built-in real-world incidents** (Retry storm, Cache drift, DNS failure, Memory leak, Disk saturation, etc.) or your AI-generated incident.
-3. Select an intervention you want to try (e.g. *Restart API* vs *Apply retry budget*).
-4. Click **"Evaluate intervention"** (or press <kbd>E</kbd>).
-5. Watch the decision:
-   * **Gate Opened (Green)**: The metric improved by over 70%, $p < 0.05$. Safe to roll out!
-   * **Gate Held (Amber)**: The fix only masked symptoms or didn't improve the metric. Held for safety!
-*(Tip: Click **"Batch all"** or press <kbd>B</kbd> to test all 3 fixes simultaneously in one click!)*
-
----
-
-### Task 3: Audit a Live Website Link (Functioning, Security & High-Traffic Readiness)
-1. Click **`04 Site Auditor`** in the left sidebar (or press <kbd>4</kbd> on your keyboard).
-2. Paste any public website or web app URL (for example, `https://yourwebsite.com`).
-3. *(Optional)* Tick **"Run safe 6x concurrency mini-burst check"** if you own or have permission to test the site and want to see if response latency spikes under parallel load.
-4. Click **"Scan Website"**. You will get 100% real measured telemetry:
-   * **Functioning Check**: HTTP status, redirect hops, server TTFB speed, missing meta/viewport tags, and automatic checks of linked JS/CSS bundles for `404` failures.
-   * **Security Check**: HTTPS redirect check, HSTS, Content-Security-Policy (CSP), Clickjacking protection, `nosniff`, cookie flags, CORS wildcards, mixed content, and leaked stack trace or credential detection.
-   * **Traffic / Crash Readiness**: Compression (`gzip`/`brotli`), CDN/edge cache coverage, burst response time degradation, plus ready-to-run **`autocannon`** & **`k6`** commands to test 100–250+ simultaneous users safely from your own terminal.
-5. Click **"Test Fix in Causal Firewall"** to verify the top remediation patch in the 5% shadow cohort!
+```text
+  Website / Bug Report
+           │
+           ▼
+  ┌─────────────────────────┐
+  │ 1. Measure Real Signals │  HTTP status, latency, headers, bundles & error logs
+  └─────────────────────────┘
+           │
+           ▼
+  ┌─────────────────────────┐
+  │ 2. Isolate Root Cause   │  Separate real causes from temporary band-aids
+  └─────────────────────────┘
+           │
+           ▼
+  ┌─────────────────────────┐
+  │ 3. 5% Shadow Canary     │  Test the fix on 5% traffic while 95% stay safe
+  └─────────────────────────┘
+           │
+     ┌─────┴─────┐
+     ▼           ▼
+  p < 0.05     Unproven
+  GATE OPENS   GATE HELD
+  (Safe 100%)  (95% Protected)
+```
 
 ---
 
-### Task 4: Inspect the Step-by-Step Evidence (Causal Trace)
-1. Click **`05 Causal trace`** (or press <kbd>5</kbd>).
-2. Click through the 8 visual nodes of the pipeline:
-   $$\text{Request} \longrightarrow \text{Signals} \longrightarrow \text{Hypothesis} \longrightarrow \text{Metric Delta} \longrightarrow \text{Policy Rules} \longrightarrow \text{Gate Decision}$$
-3. Click any node to inspect $p$-values, effect sizes, and the firewall's plain-English directive.
+## Core Sections at a Glance
+
+| Tab | Key | What It Does |
+|---|---|---|
+| **01 Console** | <kbd>1</kbd> | Overview dashboard with approval rate, decision history, search/filters, side-by-side comparison, and CSV/JSON exports. |
+| **02 Run scenario** | <kbd>2</kbd> | Test fixes safely across 8 realistic outage scenarios (retry storms, DB deadlocks, memory leaks, DNS failures, expired certs, etc.). |
+| **03 AI Doctor** | <kbd>3</kbd> | Paste any stack trace, bug, or load-test error log to isolate the root cause, spot rookie traps, and get copy-paste code patches. |
+| **04 Site Auditor** | <kbd>4</kbd> | Paste **any live website or webapp URL** for real HTTP, security header, broken asset, and high-traffic crash readiness checks. |
+| **05 Causal trace** | <kbd>5</kbd> | Step-by-step visual inspection of the evidence trail (`Request -> Signals -> Hypothesis -> Metric Delta -> Policy Rules -> Decision`). |
+| **06 Scenario builder** | <kbd>6</kbd> | Create your own custom team incident scenarios with candidate fixes to test internally. |
+| **07 Settings** | <kbd>7</kbd> | Manage your AI API key, test live connectivity, switch **Dark / Light** theme, export audit reports, or clear local history. |
 
 ---
 
-### Task 5: Compare Two Fixes Side-by-Side
-1. Go to **`01 Console`** (press <kbd>1</kbd>).
-2. In the **Decision History** list, click the small compare icon (`⇆`) next to any two evaluations.
-3. Click **"Compare selected"**.
-4. A side-by-side modal opens showing:
-   * Confidence delta (e.g. *Fix A had +69% higher statistical confidence than Fix B*).
-   * Metric deltas compared side-by-side.
-   * The winning fix highlighted in bright cyan.
+## How to Use Causal Firewall
+
+### 1. Audit Any Live Website URL (`04 Site Auditor`)
+Best when you want to check if a live website or web app has hidden bugs, security gaps, or high-traffic crash risks.
+
+1. Open **`04 Site Auditor`** (or press <kbd>4</kbd>).
+2. Paste your website link (for example, `https://yourwebsite.com`).
+3. *(Optional)* Check **"Run safe 6x concurrency mini-burst check"** if you own or have permission to test that site and want to see whether response times spike under parallel requests.
+4. Click **Scan Website**.
+
+You will immediately receive **100% real measured telemetry** (zero synthetic numbers):
+- **Functioning & Broken Bundles:** Live HTTP status, redirect chain hops, TTFB latency, missing viewport/title/meta tags, and automatic spot-checks of linked JS/CSS files for `404` or `500` errors.
+- **Defensive Security Posture:** HTTPS enforcement & HTTP-to-HTTPS redirect check, HSTS, `Content-Security-Policy`, clickjacking protection (`X-Frame-Options` / `frame-ancestors`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, cookie flags (`HttpOnly`, `Secure`, `SameSite`), wildcard CORS checks, mixed HTTP content, and leaked error trace or credential patterns (automatically redacted).
+- **High-Traffic Crash Readiness:** CDN/edge cache coverage (`Cache-Control`, Cloudflare/Vercel headers, static `/assets/` immutability), `gzip`/`brotli` compression, payload weight, and burst latency degradation.
+- **Local Stress-Test Lab (100 – 250+ Users):** Pre-built **`npx autocannon`** and **`k6`** scripts tailored to your exact URL so you can run full high-user load tests safely from your own terminal.
+- **Verified Remediation + Shadow Gate:** Copy-paste configuration fixes (`vercel.json`, Express middleware, HTTP headers) and a **"Test Fix in Causal Firewall"** button to validate them through the 5% shadow cohort.
 
 ---
 
-### Task 6: Build a Custom Scenario for Your Company
-1. Click **`06 Scenario builder`** (press <kbd>6</kbd>).
-2. Fill out the form with your company's service name, incident description, and 3 possible fixes.
-3. Click **"Save scenario"**.
-4. It is immediately available in your library and runnable in the simulator!
+### 2. Diagnose Website Errors & Slowdowns (`03 AI Doctor`)
+Best when users report a runtime bug, API timeout, or crash log.
+
+1. Open **`03 AI Doctor`** (or press <kbd>3</kbd>).
+2. Paste an error log, stack trace, or plain-English symptom (or pick a built-in template like *Next.js Stripe 504 Timeout* or *React Memory Leak*).
+3. Click **Diagnose & Generate Fixes**.
+4. Review the **At a Glance** verdict, root cause explanation, anti-hallucination safety audit, **3 ranked candidate fixes** (*Causal Fix* vs *Temporary Trap* vs *Ineffective Guess*), and copy-paste solution code.
+5. Click **Test 5% Shadow Cohort** on any candidate fix to verify it inside **05 Causal trace**.
 
 ---
 
-### Task 7: Export Reports for Post-Mortems
-1. Go to **`01 Console`** or **`07 Settings`** (press <kbd>7</kbd>).
-2. Click **"Export JSON"** or **"Export CSV"**.
-3. Downloads a clean, formatted spreadsheet of all evaluations, confidence scores, and reasons for your engineering post-mortem or compliance review.
+### 3. Test Fixes Safely Before Rollout (`02 Run scenario` & `05 Causal trace`)
+Best for testing remediation playbooks without risking live visitors.
+
+1. Open **`02 Run scenario`** (<kbd>2</kbd>).
+2. Pick an incident from the library and choose an intervention to test.
+3. Click **Evaluate intervention** (<kbd>E</kbd>) — or click **Batch all** (<kbd>B</kbd>) to test all 3 interventions at once.
+4. Explore the decision inside **`05 Causal trace`** (<kbd>5</kbd>):
+   - **Gate Opened (`allow`):** Metric improved significantly ($p < 0.05$) with blast radius safely capped at 5%.
+   - **Gate Held (`review`):** Improvement was inconclusive or masked symptoms temporarily — blocked to protect the other 95% of visitors.
 
 ---
 
-### Task 8: Connect It to a Live Real Website in Code
-In real life, you route 5% of traffic using your website's middleware (Next.js, Express, or Cloudflare Workers):
+### 4. Compare Fixes & Export Post-Mortem Reports (`01 Console`)
+1. Go to **`01 Console`** (<kbd>1</kbd>).
+2. Click the compare icon (`⇆`) next to any two past evaluations, then click **Compare selected** to view confidence deltas and winning decisions side by side.
+3. Click **Export JSON** or **Export CSV** (also available in **07 Settings**) to download clean reports for team post-mortems and incident audits.
+
+---
+
+### 5. Integrate with Live Production Traffic
+Use middleware in your Next.js, Express, or Cloudflare Workers app to keep 95% of real visitors untouched while 5% test a proposed fix:
 
 ```javascript
-// middleware.js (in your Next.js or Express app)
+// middleware.js — Safe 5% shadow cohort routing
 export function middleware(req) {
-  // 1. Send only 5% of visitors to test the emergency fix
-  const isShadowUser = Math.random() < 0.05;
+  const inShadowCohort = Math.random() < 0.05;
 
-  if (isShadowUser) {
-    // 5% test the experimental fix
-    return NextResponse.rewrite(new URL('/api/checkout-experimental', req.url));
+  if (inShadowCohort) {
+    // Only 5% of visitors test the candidate fix
+    return NextResponse.rewrite(new URL('/api/checkout-fixed', req.url));
   }
 
-  // 95% stay on the normal safe site
+  // 95% stay on the proven production path
   return NextResponse.next();
 }
 ```
 
-Then your deploy script checks with Causal Firewall:
-```javascript
-const res = await fetch('http://localhost:5173/api/evaluate', {
-  method: 'POST',
-  body: JSON.stringify({ metricDelta: '-85%', fix: 'add-timeout' })
-});
-const { decision } = await res.json();
+---
 
-if (decision === 'allow') {
-  deployTo100Percent(); // Gate opened! Roll out everywhere!
-} else {
-  revertShadowTraffic(); // Gate held! Do not break production!
-}
-```
+## Trust, Security & Honesty Principles
+
+- **Zero Fake Data & Anti-Hallucination Guard:** The Site Auditor never guesses or mocks metrics — every grade, deduction, header, asset status, and burst latency comes strictly from real observed HTTP responses. AI fix suggestions are grounded strictly in observed finding IDs and degrade smoothly to deterministic rule-based patches if offline.
+- **Built-In SSRF Protection:** The `/api/inspect` scanner blocks non-web schemes (`file://`, `javascript:`, `ftp://`), resolves DNS records pre-flight, rejects private/loopback/link-local/metadata IP ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1`, `fc00::/7`, `fe80::/10`), and re-validates every manual redirect hop.
+- **Safe Bounded Load Probing:** Hosted burst tests are permission-gated and strictly capped at **6 parallel requests** so the scanner cannot be abused as a traffic flood tool; full 100–250+ user stress scripts (`autocannon` / `k6`) are generated for safe execution from your own terminal.
+- **Hardened Self-Posture:** Configured with Content Security Policy, HSTS preload, `X-Frame-Options: DENY`, `nosniff`, strict `Referrer-Policy`, `Permissions-Policy`, and immutable caching for static `/assets/`.
 
 ---
 
@@ -148,67 +152,69 @@ if (decision === 'allow') {
 
 | Key | Action |
 |---|---|
-| <kbd>1</kbd> | Go to Console |
-| <kbd>2</kbd> | Go to Simulator |
-| <kbd>3</kbd> | Go to AI Incident Doctor |
-| <kbd>4</kbd> | Go to Live Site Auditor |
-| <kbd>5</kbd> | Go to Causal Trace |
-| <kbd>6</kbd> | Go to Scenario Builder |
-| <kbd>7</kbd> | Go to Settings |
+| <kbd>1</kbd> | Console |
+| <kbd>2</kbd> | Run scenario |
+| <kbd>3</kbd> | AI Doctor |
+| <kbd>4</kbd> | Live Site Auditor |
+| <kbd>5</kbd> | Causal trace |
+| <kbd>6</kbd> | Scenario builder |
+| <kbd>7</kbd> | Settings |
 | <kbd>E</kbd> | Evaluate selected intervention |
-| <kbd>B</kbd> | Batch evaluate all 3 interventions |
-| <kbd>T</kbd> | Toggle light / dark theme |
-| <kbd>?</kbd> | Show keyboard cheat sheet |
-| <kbd>Esc</kbd> | Close any open modal |
+| <kbd>B</kbd> | Batch evaluate all interventions |
+| <kbd>T</kbd> | Toggle Light / Dark theme |
+| <kbd>?</kbd> | Show keyboard shortcut cheat sheet |
+| <kbd>Esc</kbd> | Close open modal |
 
 ---
 
-## How to Run Locally
+## Local Setup & Testing
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open **`http://localhost:5173/`** in your browser.
+Open **`http://localhost:5173/`** in your browser. Vite automatically mounts `/api/inspect` locally so website auditing works identically to production.
 
-To run the automated test suite:
+**Run automated test suite (`49` tests):**
 ```sh
 npm test
 ```
-*(49 automated tests covering the live HTTP/HTML Site Auditor, SSRF safety guard, AI engine, policy engine, statistical z-scores, and storage).*
 
-To create a deployable production build:
+**Build production bundle:**
 ```sh
 npm run build
 ```
 
 ---
 
-## Project Structure
+## Project Architecture
 
 ```text
-index.html                 Shell, header pills, theme toggles, modal roots
-styles.css                 Observability console design system (dark & light modes)
-vite.config.js             Vite config & local /api/inspect server middleware
+public/
+  logo.png, favicon.png, apple-touch-icon.png   App branding & icon assets
 api/
-  inspect.js               Vercel Serverless Function for real URL auditing
+  inspect.js                 Vercel Serverless Function for real URL auditing
+index.html                   App shell, header branding, navigation & modal roots
+styles.css                   Responsive Dark & Light design system
+vercel.json                  Hardened security headers & immutable asset caching rules
+vite.config.js               Vite bundler & local /api/inspect server middleware
 src/
-  main.js                  Controller, router, event delegation, UI views
+  main.js                    UI views, router, event delegation & charts
   state/
-    store.js               Reactive state, persistence, audit & AI dispatch
+    store.js                 Reactive store, shadow evaluations, site audit & AI dispatch
   domain/
-    auditor-rules.js       Deterministic security, functioning & scaling rules
-    site-auditor.js        SSRF-guarded live HTTP fetcher, asset & burst prober
-    gemini.js              AI diagnostic & grounded remediation API client
-    fixtures.js            8 real-world failure scenarios & signals
-    policy-engine.js       Pure policy gate, batch testing, comparison diffs
-    statistics.js          Normal CDF math, z-scores, p-values, effect sizes
-    storage.js             LocalStorage persistence, JSON/CSV exports
+    auditor-rules.js         Deterministic security, functioning & scaling audit rules
+    site-auditor.js          SSRF-guarded HTTP fetcher, asset spot-checker & burst prober
+    gemini.js                AI diagnostic engine & grounded remediation generator
+    fixtures.js              8 real-world failure scenarios & telemetry signals
+    policy-engine.js         Deterministic firewall gate, batch evaluation & diffs
+    statistics.js            Normal CDF z-scores, p-values, confidence & effect sizes
+    storage.js               Browser persistence & JSON/CSV post-mortem exports
 test/
-  site-auditor.test.js     SSRF, header/HTML rules & live HTTP server tests
-  gemini.test.js           Live AI API integration tests
-  policy-engine.test.js    Decision boundary and scenario tests
-  statistics.test.js       Normal distribution and confidence tests
-  storage.test.js          Storage serialization and import/export tests
+  site-auditor.test.js       SSRF blocking, HTML/security rules & live HTTP server tests
+  gemini.test.js             Live AI API integration & key validation tests
+  policy-engine.test.js      Decision gate boundary & scenario tests
+  statistics.test.js         Normal CDF distribution & statistical confidence tests
+  storage.test.js            Storage serialization & scenario import/export tests
 ```
