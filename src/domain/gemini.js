@@ -197,3 +197,102 @@ Return ONLY valid raw JSON with NO markdown code block wrapper, using this exact
       return parsed;
     });
 }
+
+/**
+ * Grounded AI remediation synthesizer for real Website Audit reports.
+ *
+ * Strictly analyzes ONLY the measured HTTP headers, status codes, broken assets,
+ * and bounded burst telemetry returned by /api/inspect. Never invents fake findings.
+ */
+export function analyzeSiteAuditWithAI(auditReport, apiKey = getApiKey()) {
+  if (!apiKey) {
+    return Promise.reject(new Error('No AI API key configured.'));
+  }
+
+  const url = `${API_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+
+  const compactTelemetry = {
+    finalUrl: auditReport.finalUrl,
+    statusCode: auditReport.statusCode,
+    ttfbMs: auditReport.ttfbMs,
+    totalMs: auditReport.totalMs,
+    byteSize: auditReport.byteSize,
+    stack: auditReport.stack,
+    headersSummary: auditReport.headersSummary,
+    htmlSummary: auditReport.htmlSummary,
+    burstStats: auditReport.burstStats,
+    scores: auditReport.scores,
+    findings: (auditReport.findings || []).map(f => ({
+      id: f.id,
+      category: f.category,
+      severity: f.severity,
+      title: f.title,
+      evidence: f.evidence
+    }))
+  };
+
+  const prompt = `You are a Principal Web Security & Reliability Engineer for Causal Firewall.
+Below is the REAL measured HTTP, HTML, header, and bounded concurrency telemetry from scanning a live website.
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. Reference ONLY the exact findings, headers, timings, and asset statuses present in this telemetry JSON.
+2. NEVER invent vulnerabilities, fake metrics, or fake endpoints that are not explicitly listed in "findings" or "headersSummary".
+3. Write in plain, simple English that any developer or founder can immediately understand.
+4. Provide framework-appropriate copy-paste configuration or code fixes matching the detected "stack" (e.g., Vercel/Next.js vercel.json/next.config.js, Express helmet/compression, Nginx, or HTML fixes).
+
+Measured Telemetry JSON:
+${JSON.stringify(compactTelemetry, null, 2)}
+
+Return ONLY valid JSON matching this schema:
+{
+  "executiveSummary": "2 crisp sentences summarizing what works well, what is risky or slow, and whether it is safe for traffic.",
+  "crashRiskVerdict": "Low|Moderate|High|Critical",
+  "crashRiskReason": "1-2 sentences explaining why it can or cannot handle many simultaneous users based ONLY on TTFB, caching/CDN, compression, and burstStats.",
+  "priorityPlan": [
+    {
+      "findingId": "exact finding id from telemetry",
+      "title": "Plain-English fix title",
+      "whyItMatters": "Simple 1-sentence reason"
+    }
+  ],
+  "patchTitle": "e.g. Next.js / Vercel Headers & Edge Caching Fix",
+  "patchCode": "// Concrete ready-to-copy config or code addressing the exact measured issues",
+  "patchLang": "json|javascript|html|nginx",
+  "topCausalFix": {
+    "label": "Short action label (under 40 chars)",
+    "effect": "Why fixing these measured issues improves reliability/latency",
+    "delta": "-75%"
+  },
+  "recommendation": "One sentence next step for the site owner.",
+  "antiHallucinationNote": "List the exact finding IDs from the telemetry JSON used to derive this patch."
+}`;
+
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 4096,
+      responseMimeType: 'application/json'
+    }
+  };
+
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(errData => {
+          throw new Error(errData.error?.message || `AI API returned HTTP ${res.status}`);
+        });
+      }
+      return res.json();
+    })
+    .then(data => {
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('AI returned an empty response.');
+      const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+      return JSON.parse(cleaned);
+    });
+}

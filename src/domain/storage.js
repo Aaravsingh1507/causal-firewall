@@ -8,7 +8,8 @@ const PREFIX = 'causal-firewall';
 const KEYS = {
   HISTORY: `${PREFIX}:history`,
   CUSTOM_SCENARIOS: `${PREFIX}:custom-scenarios`,
-  PREFERENCES: `${PREFIX}:preferences`
+  PREFERENCES: `${PREFIX}:preferences`,
+  SITE_AUDITS: `${PREFIX}:site-audits`
 };
 
 /* ── helpers ───────────────────────────────────────────── */
@@ -46,6 +47,11 @@ export function loadHistory() { return safeGet(KEYS.HISTORY, []); }
 
 export function saveCustomScenarios(list) { return safeSet(KEYS.CUSTOM_SCENARIOS, list); }
 export function loadCustomScenarios() { return safeGet(KEYS.CUSTOM_SCENARIOS, []); }
+
+/* ── site audits ───────────────────────────────────────── */
+
+export function saveSiteAudits(list) { return safeSet(KEYS.SITE_AUDITS, (list || []).slice(0, 10)); }
+export function loadSiteAudits() { return safeGet(KEYS.SITE_AUDITS, []); }
 
 /* ── preferences ───────────────────────────────────────── */
 

@@ -6,13 +6,20 @@
 
 import { defaultPolicy, getScenario, scenarios } from '../domain/fixtures.js';
 import { evaluateScenario, evaluateBatch, summarizeHistory } from '../domain/policy-engine.js';
-import { saveHistory, loadHistory, loadCustomScenarios, saveCustomScenarios, loadPreferences, savePreferences } from '../domain/storage.js';
-import { diagnoseIncident, testConnection } from '../domain/gemini.js';
+import {
+  saveHistory, loadHistory,
+  loadCustomScenarios, saveCustomScenarios,
+  loadPreferences, savePreferences,
+  loadSiteAudits, saveSiteAudits
+} from '../domain/storage.js';
+import { diagnoseIncident, analyzeSiteAuditWithAI, testConnection } from '../domain/gemini.js';
+import { auditToCausalScenario } from '../domain/auditor-rules.js';
 
 export function createStore() {
-  const persisted = loadHistory();
-  const prefs     = loadPreferences();
-  const custom    = loadCustomScenarios();
+  const persisted  = loadHistory();
+  const prefs      = loadPreferences();
+  const custom     = loadCustomScenarios();
+  const siteAudits = loadSiteAudits();
 
   const state = {
     /* navigation */
@@ -60,6 +67,18 @@ export function createStore() {
     aiStageText: '',
     aiError: null,
     geminiStatus: { checked: false, connected: false, model: null, latencyMs: 0 },
+
+    /* Live Site Auditor */
+    siteAuditHistory: siteAudits,
+    siteAudit: siteAudits[0] || null,
+    siteAuditAI: siteAudits[0]?.aiAnalysis || null,
+    siteAuditLoading: false,
+    siteAuditStage: 0,
+    siteAuditStageText: '',
+    siteAuditError: null,
+    siteAuditTab: 'all',
+    siteAuditUrlInput: siteAudits[0]?.inputUrl || '',
+    siteAuditBurstChecked: false,
 
     /* toast */
     toast: null
@@ -119,7 +138,7 @@ export function createStore() {
 
     /* navigation */
     setRoute(route) {
-      const valid = ['console', 'simulate', 'ai', 'trace', 'builder', 'settings'];
+      const valid = ['console', 'simulate', 'ai', 'audit', 'trace', 'builder', 'settings'];
       state.route = valid.includes(route) ? route : 'console';
       if (state.route === 'trace' && !state.evaluation && state.history.length > 0) {
         state.evaluation = state.history.find(e => e.id === state.selectedEvaluationId) || state.history[0];
@@ -359,6 +378,135 @@ export function createStore() {
       state.aiDiagnosis = null;
       state.aiError = null;
       emit();
+    },
+
+    /* Live Site Auditor */
+    setSiteAuditUrlInput(val) {
+      state.siteAuditUrlInput = val;
+    },
+    setSiteAuditBurstChecked(checked) {
+      state.siteAuditBurstChecked = Boolean(checked);
+      emit();
+    },
+    setSiteAuditTab(tab) {
+      state.siteAuditTab = tab || 'all';
+      emit();
+    },
+    selectSiteAudit(auditedAt) {
+      const found = state.siteAuditHistory.find(a => a.auditedAt === auditedAt);
+      if (!found) return;
+      state.siteAudit = found;
+      state.siteAuditAI = found.aiAnalysis || null;
+      state.siteAuditUrlInput = found.inputUrl;
+      state.siteAuditError = null;
+      emit();
+    },
+    clearSiteAudit() {
+      state.siteAudit = null;
+      state.siteAuditAI = null;
+      state.siteAuditError = null;
+      state.siteAuditUrlInput = '';
+      emit();
+    },
+    async runSiteAudit(rawUrl, runBurst = false) {
+      const trimmed = (rawUrl || '').trim();
+      if (!trimmed) {
+        showToast('Please paste a website or web app URL.', 'warning');
+        return;
+      }
+
+      state.siteAuditUrlInput = trimmed;
+      state.siteAuditBurstChecked = Boolean(runBurst);
+      state.siteAuditLoading = true;
+      state.siteAuditError = null;
+      state.siteAuditAI = null;
+      state.siteAuditStage = 1;
+      state.siteAuditStageText = 'Resolving DNS & verifying public SSRF boundary...';
+      emit();
+
+      const t1 = setTimeout(() => {
+        if (state.siteAuditLoading) {
+          state.siteAuditStage = 2;
+          state.siteAuditStageText = 'Inspecting HTTP headers, HTTPS redirect & HTML structure...';
+          emit();
+        }
+      }, 450);
+
+      const t2 = setTimeout(() => {
+        if (state.siteAuditLoading) {
+          state.siteAuditStage = 3;
+          state.siteAuditStageText = runBurst
+            ? 'Checking JS/CSS bundles & running safe 6x concurrency burst...'
+            : 'Checking linked JS/CSS bundles & caching architecture...';
+          emit();
+        }
+      }, 1100);
+
+      try {
+        const res = await fetch('/api/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: trimmed, runBurst: Boolean(runBurst) })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || `Inspection failed with HTTP ${res.status}`);
+        }
+
+        clearTimeout(t1);
+        clearTimeout(t2);
+
+        state.siteAuditStage = 4;
+        state.siteAuditStageText = 'Synthesizing grounded fixes from measured telemetry...';
+        state.siteAudit = data;
+        emit();
+
+        // Try AI enrichment grounded strictly in observed data; fall back smoothly if unavailable
+        let aiAnalysis = null;
+        try {
+          aiAnalysis = await analyzeSiteAuditWithAI(data);
+        } catch {
+          aiAnalysis = null;
+        }
+
+        if (aiAnalysis) {
+          data.aiAnalysis = aiAnalysis;
+        }
+
+        state.siteAudit = data;
+        state.siteAuditAI = aiAnalysis;
+        state.siteAuditLoading = false;
+        state.siteAuditStage = 0;
+        state.siteAuditStageText = '';
+        state.siteAuditTab = 'all';
+        state.siteAuditHistory = [data, ...state.siteAuditHistory.filter(a => a.finalUrl !== data.finalUrl)].slice(0, 10);
+        saveSiteAudits(state.siteAuditHistory);
+        emit();
+        showToast(`Audit complete: Overall Grade ${data.scores.grade} (${data.scores.overall}/100)`, 'success');
+        return data;
+      } catch (err) {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        state.siteAuditLoading = false;
+        state.siteAuditStage = 0;
+        state.siteAuditStageText = '';
+        state.siteAuditError = err.message || 'Failed to inspect URL.';
+        emit();
+        showToast(`Audit error: ${state.siteAuditError}`, 'error');
+        return null;
+      }
+    },
+    testAuditFixInFirewall() {
+      if (!state.siteAudit) return;
+      const scenario = auditToCausalScenario(state.siteAudit, state.siteAuditAI);
+      state.customScenarios = [...state.customScenarios.filter(s => s.id !== scenario.id), scenario];
+      saveCustomScenarios(state.customScenarios);
+      state.scenarioId = scenario.id;
+      state.interventionId = scenario.interventions[0].id;
+      state.selectedNodeId = 'decision';
+      state.route = 'trace';
+      window.history.replaceState(null, '', '#trace');
+      store.evaluate();
     },
 
     /* onboarding */

@@ -79,13 +79,15 @@ function renderTrafficSplit(safePct = 95, canaryPct = 5) {
 /**
  * Diagnostic Multi-Stage Radar & Scanner
  */
-function renderScanner(stage = 1, stageText = '') {
-  const steps = [
+function renderScanner(stage = 1, stageText = '', customConfig = null) {
+  const steps = customConfig?.steps || [
     '1. Ingesting error telemetry and stack traces',
     '2. Isolating failure domain & extracting symptoms',
     '3. Synthesizing hypothesis & verifying safety invariants',
     '4. Formulating copy-paste code patch & canary routing'
   ];
+  const title = customConfig?.title || 'AI Diagnostic Intelligence In Progress';
+  const defaultSub = customConfig?.subtitle || 'Analyzing incident telemetry and formulating verified fixes...';
 
   return `<section class="panel ai-scanner-panel">
     <div class="radar-sweep-container">
@@ -94,8 +96,8 @@ function renderScanner(stage = 1, stageText = '') {
       <div class="radar-scanner"></div>
       <div class="radar-center-dot"></div>
     </div>
-    <div class="scanner-title">AI Diagnostic Intelligence In Progress</div>
-    <div class="scanner-subtitle">${esc(stageText || 'Analyzing incident telemetry and formulating verified fixes...')}</div>
+    <div class="scanner-title">${esc(title)}</div>
+    <div class="scanner-subtitle">${esc(stageText || defaultSub)}</div>
     <div class="scanner-steps">
       ${steps.map((label, idx) => {
         const num = idx + 1;
@@ -120,6 +122,7 @@ function layout(content) {
     console:  ['Control plane', 'Remediation, with proof.'],
     simulate: ['Controlled experiment', 'Run a shadow intervention.'],
     ai:       ['AI Incident Doctor', 'Diagnose real website errors with AI.'],
+    audit:    ['Live Site Auditor', 'Check any website for bugs, security & crash risk.'],
     trace:    ['Evidence trail', 'Follow the causal path.'],
     builder:  ['Scenario builder', 'Create a custom incident.'],
     settings: ['Configuration', 'Preferences & AI API key.']
@@ -152,8 +155,9 @@ function renderConsole() {
       <h2>Automation can fix<br><em>the wrong cause.</em></h2>
       <p>When an incident hits a website or app, developers usually guess a solution. Causal Firewall isolates the fix to a safe 5% shadow cohort first, demanding statistical proof before letting code touch 100% of production traffic.</p>
       <div class="hero-actions">
-        <a class="primary-button" href="#simulate">Run a scenario <span aria-hidden="true">${icon('arrow')}</span></a>
+        <a class="primary-button" href="#audit">Audit a Website URL <span aria-hidden="true">${icon('arrow')}</span></a>
         <a class="secondary-button" href="#ai"><span class="sparkle-icon">✨</span> AI Incident Doctor</a>
+        <a class="secondary-button" href="#simulate">Run a scenario</a>
       </div>
     </div>
     <div class="signal-orbit" aria-label="Evidence-first remediation diagram">
@@ -486,6 +490,327 @@ function renderSimulator() {
     </section>
   </div>
   <div class="experiment-footnote"><span class="footnote-mark">✳</span><p>This is a safe sandbox. Causal Firewall tests candidate fixes on a 5% shadow cohort before touching production.</p></div>`);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE SITE AUDITOR PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+function scoreTone(score) {
+  return score >= 85 ? 'healthy' : score >= 62 ? 'warning' : 'critical';
+}
+
+function severityRank(sev) {
+  return sev === 'critical' ? 0 : sev === 'warning' ? 1 : sev === 'info' ? 2 : 3;
+}
+
+function renderSiteAuditor() {
+  const audit = store.state.siteAudit;
+  const ai = store.state.siteAuditAI;
+  const loading = store.state.siteAuditLoading;
+  const stage = store.state.siteAuditStage;
+  const stageText = store.state.siteAuditStageText;
+  const error = store.state.siteAuditError;
+  const tab = store.state.siteAuditTab || 'all';
+  const urlVal = store.state.siteAuditUrlInput || '';
+  const burstChecked = Boolean(store.state.siteAuditBurstChecked);
+  const recent = store.state.siteAuditHistory || [];
+
+  const sampleUrls = [
+    { label: '⚡ Causal Firewall (Live)', url: 'https://causal-firewall-main.vercel.app' },
+    { label: '🌐 Example.com', url: 'https://example.com' },
+    { label: '📚 Wikipedia', url: 'https://www.wikipedia.org' }
+  ];
+
+  const auditScannerConfig = {
+    title: 'Inspecting Live Website & Server Telemetry',
+    subtitle: 'Running real HTTP, header, asset, and safety diagnostics...',
+    steps: [
+      '1. Resolving DNS & validating public SSRF security boundary',
+      '2. Fetching live HTTP status, redirect chain & response headers',
+      '3. Auditing HTML security risks, broken JS/CSS bundles & caching',
+      '4. Measuring concurrency latency & generating verified patches'
+    ]
+  };
+
+  let resultsHTML = '';
+  if (loading) {
+    resultsHTML = renderScanner(stage, stageText, auditScannerConfig);
+  } else if (audit) {
+    const allFindings = [...(audit.findings || [])].sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
+    const counts = {
+      all: allFindings.length,
+      security: allFindings.filter(f => f.category === 'security').length,
+      functioning: allFindings.filter(f => f.category === 'functioning').length,
+      scalability: allFindings.filter(f => f.category === 'scalability').length
+    };
+    const visibleFindings = tab === 'all' ? allFindings : allFindings.filter(f => f.category === tab);
+    const problemCount = allFindings.filter(f => f.severity === 'critical' || f.severity === 'warning').length;
+    const patchTitle = ai?.patchTitle || audit.defaultPatch?.title || 'Recommended Configuration Fix';
+    const patchCode = ai?.patchCode || audit.defaultPatch?.code || '';
+
+    const crashVerdict = ai?.crashRiskVerdict || (
+      audit.scores.scalability >= 82 ? 'Low' : audit.scores.scalability >= 60 ? 'Moderate' : 'High'
+    );
+    const crashReason = ai?.crashRiskReason || (
+      audit.burstStats
+        ? `Measured ${audit.ttfbMs}ms baseline TTFB and ${audit.burstStats.p95Ms}ms p95 across ${audit.burstStats.concurrency} concurrent requests (${audit.burstStats.okCount}/${audit.burstStats.concurrency} succeeded).`
+        : `Baseline TTFB is ${audit.ttfbMs}ms with ${audit.headersSummary?.cacheControl ? `Cache-Control (${audit.headersSummary.cacheControl})` : 'no caching headers detected'}. Enable the 6x burst checkbox to test live concurrency.`
+    );
+
+    resultsHTML = `<section class="panel audit-result-panel">
+      <div class="panel-header">
+        <div>
+          <span class="section-kicker">Verified Audit Report · Audited ${formatTime(audit.auditedAt)}</span>
+          <h2 class="audit-target-title">${esc(audit.finalUrl)}</h2>
+        </div>
+        <div class="audit-top-badges">
+          <span class="http-badge ${audit.statusCode < 400 ? 'ok' : 'err'}">HTTP ${audit.statusCode}</span>
+          <span class="grade-pill grade-${audit.scores.grade.toLowerCase()}">GRADE ${audit.scores.grade}</span>
+        </div>
+      </div>
+
+      <!-- 4 Scorecards -->
+      <div class="audit-score-grid">
+        <div class="audit-score-card ${scoreTone(audit.scores.overall)}">
+          <span class="score-kicker">Overall Health</span>
+          <strong class="score-val">${audit.scores.overall}<span>/100</span></strong>
+          <small>${problemCount} issue${problemCount === 1 ? '' : 's'} detected</small>
+        </div>
+        <div class="audit-score-card ${scoreTone(audit.scores.functioning)}">
+          <span class="score-kicker">Functioning</span>
+          <strong class="score-val">${audit.scores.functioning}<span>/100</span></strong>
+          <small>Status, meta & asset health</small>
+        </div>
+        <div class="audit-score-card ${scoreTone(audit.scores.security)}">
+          <span class="score-kicker">Security Posture</span>
+          <strong class="score-val">${audit.scores.security}<span>/100</span></strong>
+          <small>TLS, headers, cookies & DOM</small>
+        </div>
+        <div class="audit-score-card ${scoreTone(audit.scores.scalability)}">
+          <span class="score-kicker">Traffic Readiness</span>
+          <strong class="score-val">${audit.scores.scalability}<span>/100</span></strong>
+          <small>TTFB, CDN caching & burst</small>
+        </div>
+      </div>
+
+      <!-- Real Measured Telemetry Strip -->
+      <div class="audit-telemetry-strip">
+        <div class="tele-item">
+          <span>Baseline Speed (TTFB)</span>
+          <strong>${audit.ttfbMs} ms</strong>
+        </div>
+        <div class="tele-item">
+          <span>6x Concurrency Burst</span>
+          <strong>${audit.burstStats ? `${audit.burstStats.p95Ms} ms p95 (${audit.burstStats.okCount}/${audit.burstStats.concurrency} OK)` : 'Not Run'}</strong>
+        </div>
+        <div class="tele-item">
+          <span>Payload & Encoding</span>
+          <strong>${Math.round(audit.byteSize / 1024)} KB · ${esc(audit.headersSummary?.contentEncoding || 'uncompressed')}</strong>
+        </div>
+        <div class="tele-item">
+          <span>Redirects</span>
+          <strong>${(audit.redirectChain || []).length} hop${(audit.redirectChain || []).length === 1 ? '' : 's'}</strong>
+        </div>
+        <div class="tele-item">
+          <span>Detected Stack</span>
+          <strong>${(audit.stack || []).length ? audit.stack.map(s => esc(s.name)).join(', ') : 'Custom / Undisclosed'}</strong>
+        </div>
+      </div>
+
+      <!-- High-Traffic Crash Readiness & AI Executive Summary -->
+      <div class="audit-verdict-box ${crashVerdict === 'Low' ? 'low' : crashVerdict === 'Moderate' ? 'mod' : 'high'}">
+        <div class="audit-verdict-head">
+          <strong>🚦 High-Traffic Crash Risk: ${esc(crashVerdict)}</strong>
+          ${ai ? '<span class="mono">GROUNDED AI + TELEMETRY SUMMARY</span>' : '<span class="mono">DETERMINISTIC TELEMETRY VERDICT</span>'}
+        </div>
+        ${ai?.executiveSummary ? `<p class="verdict-lead">${esc(ai.executiveSummary)}</p>` : ''}
+        <p>${esc(crashReason)}</p>
+        ${ai?.antiHallucinationNote ? `<small class="anti-hal-tag">🛡️ Grounded strictly in: ${esc(ai.antiHallucinationNote)}</small>` : ''}
+      </div>
+
+      <!-- Findings Board with Filter Tabs -->
+      <div class="audit-findings-section">
+        <div class="audit-findings-head">
+          <div>
+            <span class="section-kicker">Measured Inspection Checks</span>
+            <h3>Functioning, Security & Scaling Diagnostics</h3>
+          </div>
+          <div class="filter-chips">
+            <button class="filter-chip ${tab === 'all' ? 'active' : ''}" data-action="select-audit-tab" data-tab="all">All (${counts.all})</button>
+            <button class="filter-chip ${tab === 'security' ? 'active' : ''}" data-action="select-audit-tab" data-tab="security">Security (${counts.security})</button>
+            <button class="filter-chip ${tab === 'functioning' ? 'active' : ''}" data-action="select-audit-tab" data-tab="functioning">Functioning (${counts.functioning})</button>
+            <button class="filter-chip ${tab === 'scalability' ? 'active' : ''}" data-action="select-audit-tab" data-tab="scalability">Traffic & Load (${counts.scalability})</button>
+          </div>
+        </div>
+
+        <div class="audit-findings-list">
+          ${visibleFindings.map(f => `
+            <div class="audit-finding-card sev-${f.severity}">
+              <div class="finding-top">
+                <div class="finding-title-group">
+                  <span class="finding-sev-badge ${f.severity}">${f.severity === 'pass' ? '✓ PASS' : f.severity.toUpperCase()}</span>
+                  <span class="finding-cat-pill">${f.category}</span>
+                  <strong>${esc(f.title)}</strong>
+                </div>
+              </div>
+              <div class="finding-evidence"><code>Observed: ${esc(f.evidence)}</code></div>
+              <p class="finding-impact">${esc(f.impact)}</p>
+              ${f.fixHint ? `<div class="finding-fix-hint"><strong>Fix:</strong> ${esc(f.fixHint)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Linked Asset Health Spot-Checks -->
+      ${(audit.assetChecks || []).length > 0 ? `
+        <div class="audit-assets-box">
+          <span class="section-kicker">Sampled JS / CSS Bundle Checks</span>
+          <div class="audit-assets-grid">
+            ${audit.assetChecks.map(a => `
+              <div class="asset-check-row ${a.ok ? 'ok' : 'fail'}">
+                <span class="asset-status">${a.ok ? `HTTP ${a.status}` : `FAIL ${a.status || 'ERR'}`}</span>
+                <span class="asset-url" title="${esc(a.url)}">${esc(a.url)}</span>
+                <span class="asset-cache">${esc(a.cacheControl || 'no cache-control')}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Ready-to-Deploy Patch + Causal Firewall Shadow Cohort Action -->
+      ${patchCode ? `
+        <div class="code-patch-section">
+          <div class="code-patch-header">
+            <div>
+              <span class="section-kicker">Verified Remediation Config</span>
+              <strong>${esc(patchTitle)}</strong>
+            </div>
+            <div class="audit-patch-buttons">
+              <button class="copy-button" data-action="copy-code" data-code="${esc(patchCode)}">
+                <span aria-hidden="true">${icon('copy')}</span> Copy Fix
+              </button>
+              <button class="primary-button small" data-action="test-audit-in-firewall">
+                Test Fix in Causal Firewall <span aria-hidden="true">${icon('arrow')}</span>
+              </button>
+            </div>
+          </div>
+          <pre class="code-block"><code>${esc(patchCode)}</code></pre>
+        </div>
+      ` : ''}
+
+      <!-- Local Heavy Load Stress-Test Generator (100 - 250+ Users) -->
+      ${audit.stressScripts ? `
+        <div class="stress-lab-card">
+          <div class="stress-lab-head">
+            <div>
+              <span class="section-kicker">Full 100 – 250+ Concurrent User Load Test (Run Safely From Your Terminal)</span>
+              <h3>Heavy Traffic Stress-Test Commands for This URL</h3>
+              <p>Browser/Vercel servers cap automated probes at 6x concurrency to prevent DDoS abuse. To push your own app with hundreds of virtual users before launch, run either command below on your machine:</p>
+            </div>
+            <button class="secondary-button small" data-action="send-stress-to-ai">Paste Crash / Load Output in AI Doctor →</button>
+          </div>
+          <div class="stress-scripts-grid">
+            <div class="code-patch-section">
+              <div class="code-patch-header">
+                <strong>Option A: Quick 100-User Burst (Node / npx autocannon)</strong>
+                <button class="copy-button" data-action="copy-code" data-code="${esc(audit.stressScripts.autocannonCmd)}">Copy Command</button>
+              </div>
+              <pre class="code-block"><code>${esc(audit.stressScripts.autocannonCmd)}</code></pre>
+            </div>
+            <div class="code-patch-section shadow-patch">
+              <div class="code-patch-header">
+                <strong>Option B: Ramp 20 → 250 Virtual Users (k6 script.js)</strong>
+                <button class="copy-button" data-action="copy-code" data-code="${esc(audit.stressScripts.k6Script)}">Copy k6 Script</button>
+              </div>
+              <pre class="code-block"><code>${esc(audit.stressScripts.k6Script)}</code></pre>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+    </section>`;
+  } else {
+    resultsHTML = `<section class="panel ai-placeholder-panel">
+      <div class="ai-workflow-steps">
+        <div class="ai-workflow-step">
+          <span class="workflow-step-num">1</span>
+          <div>
+            <strong>Functioning & Broken Assets</strong>
+            <p>Verifies live HTTP status, redirect hops, TTFB latency, metadata, and broken JS/CSS bundles.</p>
+          </div>
+        </div>
+        <div class="ai-workflow-step">
+          <span class="workflow-step-num">2</span>
+          <div>
+            <strong>Defensive Security Audit</strong>
+            <p>Checks HTTPS/HSTS, CSP, X-Frame-Options, cookies, CORS, mixed content & leaked stack traces.</p>
+          </div>
+        </div>
+        <div class="ai-workflow-step">
+          <span class="workflow-step-num">3</span>
+          <div>
+            <strong>High-Traffic Crash Readiness</strong>
+            <p>Audits CDN caching, compression, runs an optional safe 6x burst test & generates k6 load scripts.</p>
+          </div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  return layout(`<div class="ai-doctor-grid">
+    <section class="panel ai-input-panel">
+      <div class="panel-header">
+        <div>
+          <span class="section-kicker">Real HTTP · HTML · Traffic Scanner</span>
+          <h2>Paste Website or Webapp URL</h2>
+        </div>
+        <span class="ai-live-badge"><i class="pulse-dot"></i> ZERO FAKE DATA</span>
+      </div>
+
+      <div class="ai-intro-card">
+        <p>Enter any public URL to inspect its real HTTP response, missing security headers, broken scripts/styles, and high-traffic crash readiness — then test fixes safely through Causal Firewall.</p>
+      </div>
+
+      <div class="template-section">
+        <span class="template-label">Quick test targets:</span>
+        <div class="template-chips">
+          ${sampleUrls.map(s => `<button type="button" class="template-chip" data-action="fill-audit-url" data-url="${esc(s.url)}">${s.label}</button>`).join('')}
+        </div>
+      </div>
+
+      <form class="audit-form" data-action="run-site-audit">
+        <div class="audit-url-row">
+          <input id="audit-url-input" type="text" class="audit-url-input" placeholder="https://your-website.com" value="${esc(urlVal)}" required />
+          <button type="submit" class="primary-button ai-diagnose-btn ${loading ? 'loading' : ''}" ${loading ? 'disabled' : ''}>
+            ${loading ? `<span class="spinner" aria-hidden="true"></span> Scanning URL…` : `🔍 Scan Website`}
+          </button>
+          ${audit ? `<button type="button" class="text-button" data-action="clear-audit">Clear</button>` : ''}
+        </div>
+
+        <label class="audit-burst-toggle">
+          <input type="checkbox" id="audit-burst-checkbox" ${burstChecked ? 'checked' : ''} />
+          <span>Run safe <strong>6x concurrency mini-burst check</strong> to measure latency spikes under parallel load <em>(I confirm I own or have permission to test this site)</em></span>
+        </label>
+      </form>
+
+      ${recent.length > 1 ? `
+        <div class="audit-recent-bar">
+          <label for="audit-history-select">Recent Scans (${recent.length}):</label>
+          <select id="audit-history-select" class="trace-picker-select" data-action="select-audit-history">
+            ${recent.map(item => `
+              <option value="${esc(item.auditedAt)}" ${audit && item.auditedAt === audit.auditedAt ? 'selected' : ''}>
+                Grade ${item.scores.grade} (${item.scores.overall}/100) · ${esc(item.finalUrl)} · ${item.ttfbMs}ms
+              </option>
+            `).join('')}
+          </select>
+        </div>
+      ` : ''}
+
+      ${error ? `<div class="ai-error-box"><span class="error-icon">⚠</span><div><strong>Audit Failed</strong><p>${esc(error)}</p></div></div>` : ''}
+    </section>
+
+    ${resultsHTML}
+  </div>`);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -861,7 +1186,7 @@ function renderOnboarding() {
         <div class="onboarding-step"><span class="ob-num">1</span><div><strong>Console</strong><p>Monitor your website decisions, error metrics, and safety posture at a glance.</p></div></div>
         <div class="onboarding-step"><span class="ob-num">2</span><div><strong>Run Scenario</strong><p>Choose an incident, select a candidate fix, and test it on a 5% shadow cohort.</p></div></div>
         <div class="onboarding-step"><span class="ob-num">3</span><div><strong>AI Incident Doctor</strong><p>Paste any real error log or bug description. The AI engine isolates the root cause and generates 3 testable fixes.</p></div></div>
-        <div class="onboarding-step"><span class="ob-num">4</span><div><strong>Causal Trace</strong><p>Inspect the evidence chain step-by-step: request → signals → hypothesis → metric delta → decision.</p></div></div>
+        <div class="onboarding-step"><span class="ob-num">4</span><div><strong>Live Site Auditor</strong><p>Paste a website URL to run real functioning, security header, broken asset, and traffic readiness checks.</p></div></div>
       </div>
       <div class="onboarding-footer"><p>Press <kbd>?</kbd> anytime for keyboard shortcuts.</p><button class="primary-button" data-action="dismiss-onboarding">Get started <span aria-hidden="true">${icon('arrow')}</span></button></div>
     </div>
@@ -875,7 +1200,8 @@ function renderOnboarding() {
 function renderShortcuts() {
   const shortcuts = [
     ['1', 'Go to Console'], ['2', 'Go to Simulator'], ['3', 'Go to AI Incident Doctor'],
-    ['4', 'Go to Causal Trace'], ['5', 'Go to Scenario Builder'], ['6', 'Go to Settings'],
+    ['4', 'Go to Live Site Auditor'], ['5', 'Go to Causal Trace'],
+    ['6', 'Go to Scenario Builder'], ['7', 'Go to Settings'],
     ['E', 'Evaluate intervention'], ['B', 'Batch evaluate all'], ['T', 'Toggle theme'],
     ['?', 'Show shortcuts'], ['Esc', 'Close modal / clear']
   ];
@@ -909,6 +1235,7 @@ function render() {
   const r = store.state.route;
   app.innerHTML = r === 'simulate' ? renderSimulator()
     : r === 'ai' ? renderAIDoctor()
+    : r === 'audit' ? renderSiteAuditor()
     : r === 'trace' ? renderTrace()
     : r === 'builder' ? renderBuilder()
     : r === 'settings' ? renderSettings()
@@ -986,6 +1313,39 @@ document.addEventListener('click', e => {
     const input = document.querySelector('#ai-incident-input');
     if (input) input.value = '';
   }
+  else if (act === 'fill-audit-url') {
+    const input = document.querySelector('#audit-url-input');
+    const url = t.dataset.url || '';
+    store.setSiteAuditUrlInput(url);
+    if (input) {
+      input.value = url;
+      input.focus();
+    }
+  }
+  else if (act === 'select-audit-tab') {
+    store.setSiteAuditTab(t.dataset.tab || 'all');
+  }
+  else if (act === 'clear-audit') {
+    store.clearSiteAudit();
+  }
+  else if (act === 'test-audit-in-firewall') {
+    store.testAuditFixInFirewall();
+  }
+  else if (act === 'send-stress-to-ai') {
+    const audit = store.state.siteAudit;
+    const prefill = audit
+      ? `Load / Stress Test Bottleneck Analysis for ${audit.finalUrl} (Baseline TTFB: ${audit.ttfbMs}ms${audit.burstStats ? `, 6x Burst p95: ${audit.burstStats.p95Ms}ms` : ''}):\n\n[Paste your autocannon / k6 output or server crash error log below]\n`
+      : '';
+    store.setRoute('ai');
+    window.history.replaceState(null, '', '#ai');
+    setTimeout(() => {
+      const box = document.querySelector('#ai-incident-input');
+      if (box && prefill) {
+        box.value = prefill;
+        box.focus();
+      }
+    }, 50);
+  }
   else if (act === 'copy-code') {
     copyToClipboard(t.dataset.code || '', 'Code snippet copied to clipboard!');
     const originalText = t.innerHTML;
@@ -1035,21 +1395,31 @@ document.addEventListener('click', e => {
   else if (act === 'delete-scenario' && t.dataset.scenarioId) store.deleteCustomScenario(t.dataset.scenarioId);
 });
 
-/* checkbox changes (policy toggles & trace switcher) */
+/* checkbox changes (policy toggles, trace switcher & site audit controls) */
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset?.rule) store.toggleRule(t.dataset.rule);
   if (t.dataset?.action === 'search') store.setSearch(t.value);
   if (t.dataset?.action === 'select-trace-eval') store.selectEvaluation(t.value);
+  if (t.dataset?.action === 'select-audit-history') store.selectSiteAudit(t.value);
+  if (t.id === 'audit-burst-checkbox') store.setSiteAuditBurstChecked(t.checked);
 });
 
-/* search input (live search) */
+/* live input listeners */
 document.addEventListener('input', e => {
   if (e.target.dataset?.action === 'search') store.setSearch(e.target.value);
+  if (e.target.id === 'audit-url-input') store.setSiteAuditUrlInput(e.target.value);
 });
 
-/* form submission (builder) */
+/* form submission (site auditor & scenario builder) */
 document.addEventListener('submit', e => {
+  if (e.target.dataset?.action === 'run-site-audit') {
+    e.preventDefault();
+    const urlInput = document.querySelector('#audit-url-input');
+    const burstBox = document.querySelector('#audit-burst-checkbox');
+    if (urlInput) store.runSiteAudit(urlInput.value, Boolean(burstBox?.checked));
+    return;
+  }
   if (e.target.dataset?.action !== 'save-scenario') return;
   e.preventDefault();
   const fd = new FormData(e.target);
@@ -1083,7 +1453,8 @@ document.addEventListener('keydown', e => {
 
   const routes = {
     '1': 'console', '2': 'simulate', '3': 'ai',
-    '4': 'trace',   '5': 'builder',  '6': 'settings'
+    '4': 'audit',   '5': 'trace',    '6': 'builder',
+    '7': 'settings'
   };
   if (routes[e.key]) {
     store.setRoute(routes[e.key]);
