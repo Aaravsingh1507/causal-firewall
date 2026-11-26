@@ -951,6 +951,8 @@ export function evaluateFindings({
   // CDN / Cache check
   const cacheControl = headersMap['cache-control'] || '';
   const cdnHeader = headersMap['cf-cache-status'] || headersMap['x-vercel-cache'] || headersMap['x-cache'] || '';
+  const cdnHit = /\b(hit|stale|revalidated|updating)\b/i.test(cdnHeader);
+  const noStoreOrZero = /\b(no-store|no-cache|max-age=0|must-revalidate)\b/i.test(cacheControl);
   const uncachedAssets = assetChecks.filter(a => a.ok && (!a.cacheControl || /no-store|no-cache|max-age=0/i.test(a.cacheControl)));
 
   if (!cacheControl && !cdnHeader) {
@@ -963,7 +965,7 @@ export function evaluateFindings({
       impact: 'Every visitor request hits the origin server directly, causing high crash risk during viral traffic spikes.',
       fixHint: 'Put a CDN in front (Cloudflare/Vercel) and set `Cache-Control: public, s-maxage=60, stale-while-revalidate=300` where safe.'
     });
-  } else if (/no-store/i.test(cacheControl) && !cdnHeader) {
+  } else if (/no-store/i.test(cacheControl) && !cdnHit) {
     add({
       id: 'scale-origin-uncached',
       category: 'scalability',
@@ -972,6 +974,16 @@ export function evaluateFindings({
       evidence: `Cache-Control: ${cacheControl}`,
       impact: 'Every page view runs on the origin server. Ensure DB connection pooling and autoscaling can handle peak concurrent load.',
       fixHint: 'Use short-lived edge cache / SWR for public pages and verify static assets have immutable caching.'
+    });
+  } else if (noStoreOrZero && !cdnHit) {
+    add({
+      id: 'scale-html-revalidates',
+      category: 'scalability',
+      severity: 'info',
+      title: 'Primary HTML Always Revalidates With Edge (max-age=0)',
+      evidence: [cdnHeader && `CDN Cache: ${cdnHeader}`, cacheControl && `Cache-Control: ${cacheControl}`].filter(Boolean).join(' · '),
+      impact: 'Standard for dynamic/SPA entry HTML so updates appear right away, provided hashed JS/CSS bundles use immutable caching.',
+      fixHint: 'Keep entry HTML fresh and ensure `/assets/` bundles serve long `max-age=31536000, immutable`.'
     });
   } else {
     add({

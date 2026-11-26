@@ -545,7 +545,14 @@ function renderSiteAuditor() {
       scalability: allFindings.filter(f => f.category === 'scalability').length
     };
     const visibleFindings = tab === 'all' ? allFindings : allFindings.filter(f => f.category === tab);
-    const problemCount = allFindings.filter(f => f.severity === 'critical' || f.severity === 'warning').length;
+    const critCount = allFindings.filter(f => f.severity === 'critical').length;
+    const warnCount = allFindings.filter(f => f.severity === 'warning').length;
+    const infoCount = allFindings.filter(f => f.severity === 'info').length;
+    const breakdownText = [
+      critCount ? `${critCount} critical` : '',
+      `${warnCount} warning${warnCount === 1 ? '' : 's'}`,
+      infoCount ? `${infoCount} note${infoCount === 1 ? '' : 's'}` : ''
+    ].filter(Boolean).join(' · ');
     const patchTitle = ai?.patchTitle || audit.defaultPatch?.title || 'Recommended Configuration Fix';
     const patchCode = ai?.patchCode || audit.defaultPatch?.code || '';
 
@@ -575,7 +582,7 @@ function renderSiteAuditor() {
         <div class="audit-score-card ${scoreTone(audit.scores.overall)}">
           <span class="score-kicker">Overall Health</span>
           <strong class="score-val">${audit.scores.overall}<span>/100</span></strong>
-          <small>${problemCount} issue${problemCount === 1 ? '' : 's'} detected</small>
+          <small>${breakdownText}</small>
         </div>
         <div class="audit-score-card ${scoreTone(audit.scores.functioning)}">
           <span class="score-kicker">Functioning</span>
